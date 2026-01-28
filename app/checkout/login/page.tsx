@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
+// import { signIn } from "next-auth/react"
 import Link from "next/link"
+import { Suspense } from "react"
 import { ScrollReveal } from "@/app/components/layout/animations/scroll-reveal"
 import { BouncyButton } from "@/app/components/layout/animations/bouncy-button"
 import { Input } from "@/app/components/ui/input"
@@ -26,7 +27,7 @@ import {
   EyeOff,
   Chrome,
 } from "lucide-react"
-import { cn } from "@/app/lib/utils"
+// import { cn } from "@/app/lib/utils"
 
 // Mock course data (in real app, fetch from API)
 const courseData: Record<string, {
@@ -63,6 +64,14 @@ function formatPrice(price: number): string {
 }
 
 export default function CheckoutLoginPage() {
+    return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <LoginPageContent />
+    </Suspense>
+  )
+}
+
+function LoginPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const courseId = searchParams?.get('course') || "1"
@@ -109,7 +118,7 @@ export default function CheckoutLoginPage() {
     }, 1500)
   }
 
-  const handleSocialLogin = (provider: string) => {
+  const handleSocialLogin = (_provider: string) => {
     setLoading(true)
     // In real app: signIn(provider, { callbackUrl: `/checkout/review?course=${courseId}` })
     setTimeout(() => {

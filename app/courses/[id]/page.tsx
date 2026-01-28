@@ -17,7 +17,7 @@ import {
   Clock,
   Users,
   Star,
-  Monitor,
+  // Monitor,
   CheckCircle,
   Award,
   BookOpen,

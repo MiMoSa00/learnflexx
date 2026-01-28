@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { ScrollReveal } from "@/app/components/layout/animations/scroll-reveal"
 import { BouncyButton } from "@/app/components/layout/animations/bouncy-button"
 import { Input } from "@/app/components/ui/input"
-import { Label } from "@/app/components/ui/label"
+// import { Label } from "@/app/components/ui/label"
 import { Badge } from "@/app/components/ui/badge"
 import { Separator } from "@/app/components/ui/separator"
 import {
@@ -24,12 +24,13 @@ import {
   CreditCard,
   Calendar,
   User,
-  Mail,
-  Phone,
+  // Mail,
+  // Phone,
   AlertCircle,
   Sparkles,
 } from "lucide-react"
 import { cn } from "@/app/lib/utils"
+import { Suspense } from "react"
 
 // Mock course data
 const courseData: Record<string, {
@@ -105,8 +106,16 @@ function calculateInstallment(totalAmount: number, months: number): number {
 }
 
 export default function CheckoutReviewPage() {
+    return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ReviewPageContent />
+    </Suspense>
+  )
+}
+
+function ReviewPageContent() {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: _session } = useSession()
   const searchParams = useSearchParams()
   const courseId = searchParams?.get('course') || "1"
 

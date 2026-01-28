@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const apiKey = process.env.ONEPIPE_API_KEY
     const secretKey = process.env.ONEPIPE_SECRET_KEY

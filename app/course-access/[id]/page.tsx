@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams } from "next/navigation"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { ScrollReveal } from "@/app/components/layout/animations/scroll-reveal"
@@ -26,8 +26,8 @@ import {
   CheckCircle,
   Globe,
   BookOpen,
-  User,
-  CreditCard,
+//   User,
+//   CreditCard,
   ChevronLeft,
   Map,
   Navigation,
@@ -35,9 +35,9 @@ import {
 import { cn } from "@/app/lib/utils"
 import {
   getCourseAccessDetails,
-  isOnlineCourse,
-  isOfflineCourse,
-  formatSessionDate,
+//   isOnlineCourse,
+//   isOfflineCourse,
+//   formatSessionDate,
   getDaysUntilNextSession,
   type CourseAccessDetails,
 } from "@/app/lib/course-checker"
@@ -77,8 +77,8 @@ function formatDate(dateString: string): string {
 
 export default function CourseAccessPage() {
   const params = useParams()
-  const router = useRouter()
-  const { data: session } = useSession()
+//   const _router = useRouter()
+const { data: _session } = useSession()
   const courseId = params?.id as string
   
   const [accessDetails, setAccessDetails] = useState<CourseAccessDetails | null>(null)

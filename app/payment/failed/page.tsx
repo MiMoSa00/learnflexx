@@ -6,7 +6,7 @@ import { ScrollReveal } from "@/app/components/layout/animations/scroll-reveal"
 import { BouncyButton } from "@/app/components/layout/animations/bouncy-button"
 import { Card, CardContent } from "@/app/components/ui/card"
 import { XCircle, RotateCcw, MessageCircle, ArrowLeft, CreditCard, Building2, Phone } from "lucide-react"
-
+import { Suspense } from "react"
 const failureReasons: Record<string, string> = {
   "insufficient_funds": "Insufficient funds in your account",
   "invalid_account": "Invalid bank account details",
@@ -17,6 +17,14 @@ const failureReasons: Record<string, string> = {
 }
 
 export default function PaymentFailedPage() {
+    return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ReviewPageContent />
+    </Suspense>
+  )
+}
+
+function ReviewPageContent() {
   const searchParams = useSearchParams()
   const courseId = searchParams?.get('course') || "1"
   const reason = searchParams?.get('reason') || "default"

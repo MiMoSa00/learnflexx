@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useSession } from "next-auth/react"
 import { ScrollReveal } from "@/app/components/layout/animations/scroll-reveal"
 import { BouncyButton } from "@/app/components/layout/animations/bouncy-button"
@@ -170,7 +170,7 @@ const statusConfig = {
 }
 
 export default function PaymentsPage() {
-  const { data: session } = useSession()
+  const { data: _session } = useSession()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [dateFilter, setDateFilter] = useState("all")

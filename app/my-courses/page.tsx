@@ -41,9 +41,9 @@ import {
 import { cn } from "@/app/lib/utils"
 import {
   getUserCoursePurchases,
-  getCourseAccessLink,
-  hasPendingPaymentForCourse,
-  canAccessCourse,
+  // getCourseAccessLink,
+  // hasPendingPaymentForCourse,
+  // canAccessCourse,
   type CoursePurchase,
   type CourseStatus,
 } from "@/app/lib/payment-status"

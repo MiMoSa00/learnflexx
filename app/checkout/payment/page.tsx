@@ -7,6 +7,7 @@ import { ScrollReveal } from "@/app/components/layout/animations/scroll-reveal"
 import { BouncyButton } from "@/app/components/layout/animations/bouncy-button"
 import { Badge } from "@/app/components/ui/badge"
 import { Separator } from "@/app/components/ui/separator"
+import { Suspense } from "react"
 import {
   Card,
   CardContent,
@@ -27,13 +28,13 @@ import {
   Shield,
   Lock,
   Clock,
-  AlertCircle,
+  // AlertCircle,
   Building2,
-  Calendar,
+  // Calendar,
   Copy,
   CheckCircle2,
 } from "lucide-react"
-import { cn } from "@/app/lib/utils"
+// import { cn } from "@/app/lib/utils"
 
 const courseData: Record<string, { title: string; provider: string }> = {
   "1": { title: "Full Stack Web Development Bootcamp", provider: "TechHub Academy" },
@@ -57,6 +58,14 @@ function formatPrice(price: number): string {
 }
 
 export default function CheckoutPaymentPage() {
+     return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <PaymentPageContent />
+    </Suspense>
+  )
+}
+
+function PaymentPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   

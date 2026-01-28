@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/app/components/ui/card"
+import { Suspense } from "react"
 import {
   Select,
   SelectContent,
@@ -27,13 +28,13 @@ import {
   Shield,
   Lock,
   Clock,
-  AlertCircle,
+//   AlertCircle,
   Building2,
-  Calendar,
+//   Calendar,
   Copy,
   CheckCircle2,
 } from "lucide-react"
-import { cn } from "@/app/lib/utils"
+// import { cn } from "@/app/lib/utils"
 
 const courseData: Record<string, { title: string; provider: string }> = {
   "1": { title: "Full Stack Web Development Bootcamp", provider: "TechHub Academy" },
@@ -57,6 +58,14 @@ function formatPrice(price: number): string {
 }
 
 export default function CheckoutPaymentPage() {
+     return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ReviewPageContent />
+    </Suspense>
+  )
+}
+
+function ReviewPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   

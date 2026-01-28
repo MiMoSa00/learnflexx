@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server"
-import { PayWithAccountClient } from "@/app/lib/paywithaccount"
+// import { PayWithAccountClient } from "@/app/lib/paywithaccount"
 
 export async function GET() {
   try {
-    const client = new PayWithAccountClient()
+// const _client = new PayWithAccountClient()
     
     // Test if API key is configured
     if (!process.env.PAYWITHACCOUNT_API_KEY || !process.env.PAYWITHACCOUNT_SECRET_KEY) {

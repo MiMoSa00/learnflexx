@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/app/components/ui/card"
 import { Badge } from "@/app/components/ui/badge"
 import { Separator } from "@/app/components/ui/separator"
 import { CheckCircle, Download, ShoppingCart, LayoutDashboard, Mail, MapPin, Key, ExternalLink } from "lucide-react"
-
+import { Suspense } from "react"
 const courseData: Record<string, { 
   title: string
   provider: string
@@ -25,6 +25,14 @@ const courseData: Record<string, {
 }
 
 export default function PaymentSuccessPage() {
+     return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <ReviewPageContent />
+    </Suspense>
+  )
+}
+
+function ReviewPageContent() {
   const searchParams = useSearchParams()
   const courseId = searchParams?.get('course') || "1"
   const enrollmentId = searchParams?.get('enrollment') || `ENR-${Date.now()}`
