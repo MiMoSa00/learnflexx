@@ -1,4 +1,4 @@
-import { Header } from "@/app/components/layout/header"
+// import { Header } from "@/app/components/layout/header"
 import { Footer } from "@/app/components/layout/footer"
 import { HeroSection } from "@/app/components/layout/home/hero-section"
 import { CategoriesSection } from "@/app/components/layout/home/categories-section"
@@ -12,7 +12,7 @@ import { CTASection } from "@/app/components/layout/home/cta-section"
 export default function HomePage() {
   return (
     <div className="min-h-screen w-full flex flex-col bg-background">
-      <Header />
+      {/* <Header /> */}
       <main className="flex-1 w-full">
         <HeroSection />
         <CategoriesSection />
