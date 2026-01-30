@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         auth_provider: "PaywithAccount",
       },
       transaction: {
-        mock_mode: "Live",
+        mock_mode: "Inspect",
         transaction_ref: body.transaction.transaction_ref,
         transaction_desc: body.transaction.transaction_desc,
         transaction_ref_parent: null,
