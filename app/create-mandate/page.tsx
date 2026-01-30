@@ -66,10 +66,21 @@ export default function CreateMandatePage() {
            const fullName = profile.full_name || session.user.user_metadata.full_name || ""
            const [first, ...last] = fullName.split(" ")
            
+           console.log("📱 Profile Data Loaded:", {
+             fullName,
+             firstName: first,
+             lastName: last.join(" "),
+             email: session.user.email,
+             phone: profile.phone
+           })
+           
            form.setValue("firstName", first || "")
            form.setValue("lastName", last.join(" ") || "")
            form.setValue("email", session.user.email || "")
            form.setValue("phone", profile.phone || "")
+        } else {
+           console.log("⚠️ No profile found, using session data only")
+           form.setValue("email", session.user.email || "")
         }
       } catch (err) {
         console.error("Profile fetch error", err)
@@ -84,13 +95,13 @@ export default function CreateMandatePage() {
     setError(null)
     console.log("Form Data:", data)
 
-    // Generate unique reference
-    const generateRef = () => `ref_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    // Use phone number as the customer reference
+    const customerRef = data.phone || `ref_${Date.now()}`
+    const transactionRef = `ref_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
     
     // Construct Payload - send PLAIN TEXT data, let backend handle encryption
-    const ref = generateRef()
     const payload: MandatePayload = {
-      request_ref: ref,
+      request_ref: transactionRef,
       request_type: "create mandate",
       auth: {
         type: "bank.account",
@@ -98,17 +109,19 @@ export default function CreateMandatePage() {
         // ❌ DON'T send secure from frontend - backend will add it
       },
       transaction: {
-        mock_mode: "Inspect",
-        transaction_ref: ref,
+        mock_mode: "Live",
+        transaction_ref: transactionRef,
         transaction_desc: "Creating a mandate",
         transaction_ref_parent: null,
         amount: 0,
         customer: {
-          customer_ref: ref,
+          customer_ref: customerRef, // Use phone number as customer_ref
           firstname: data.firstName || "User",
           surname: data.lastName || "User", 
           email: data.email || "user@example.com",
           mobile_no: data.phone || "08000000000",
+          account_number: data.accountNumber,
+          bank_code: data.bankCode,
         },
         meta: {
           amount: "1000",
@@ -126,19 +139,51 @@ export default function CreateMandatePage() {
 
     createMandate(payload, {
       onSuccess: async (response) => {
-        console.log("Mandate Success:", response)
+        console.log("Mandate Response:", response)
         
-        // Update profile
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-             await supabase
-            .from('profiles')
-            .update({ subscription_id: 'active_mandate_' + payload.request_ref })
-            .eq('id', session.user.id)
+        // Check if the API returned a successful status
+        if (response.status === "Successful") {
+          try {
+            // Extract subscription_id from the API response
+            const subscriptionId = response.data?.provider_response?.meta?.subscription_id
+            
+            if (!subscriptionId) {
+              console.warn("⚠️ No subscription_id in response, using transaction ref as fallback")
+            }
+            
+            console.log("📋 Subscription ID from API:", subscriptionId)
+            
+            // Update profile with mandate subscription_id - WAIT for completion
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ subscription_id: String(subscriptionId || payload.request_ref) })
+                .eq('id', session.user.id)
+              
+              if (updateError) {
+                console.error("Failed to update profile:", updateError)
+                setError("Mandate created but failed to update profile. Please try again.")
+                return
+              }
+              
+              console.log("✅ Profile updated with subscription_id:", subscriptionId)
+            }
+            
+            console.log("✅ Mandate Created Successfully! Redirecting to dashboard...")
+            
+            // Use window.location for a hard redirect to ensure fresh page load
+            window.location.href = "/dashboard"
+          } catch (err) {
+            console.error("Error updating profile:", err)
+            setError("Mandate created but failed to update profile.")
+          }
+        } else {
+          // API returned a failed status
+          const errorMsg = response.data?.error?.message || response.message || "Mandate creation failed"
+          console.error("❌ Mandate Failed:", errorMsg)
+          setError(errorMsg)
         }
-
-        router.push("/dashboard")
-        router.refresh()
       },
       onError: (err: Error) => {
         console.error("Mandate Failed:", err)

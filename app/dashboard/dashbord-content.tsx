@@ -80,69 +80,69 @@ const cardHoverVariants = {
   },
 };
 
-// Mock data
-const userData = {
-  enrolledCourses: 4,
-  completedCourses: 2,
-  upcomingPayments: 2,
-  totalSpent: 45000,
-};
+// Dynamic user data - initialized to zeros for new users
+// TODO: Replace with actual data fetching from Supabase
+interface UserData {
+  enrolledCourses: number;
+  completedCourses: number;
+  upcomingPayments: number;
+  totalSpent: number;
+}
 
-const enrolledCourses = [
-  {
-    id: 1,
-    title: "Web Development Bootcamp",
-    progress: 40, // Payment progress: 2 of 5 installments paid
-    nextLesson: "React Hooks Advanced",
-    mode: "Online",
-    isInstallment: true,
-    installmentsPaid: 2,
-    totalInstallments: 5,
-    amountPaid: 18000,
-    totalAmount: 45000,
-  },
-  {
-    id: 2,
-    title: "Data Science Fundamentals",
-    progress: 60, // Payment progress: 3 of 5 installments paid
-    nextLesson: "Python for Data Analysis",
-    mode: "Hybrid",
-    isInstallment: true,
-    installmentsPaid: 3,
-    totalInstallments: 5,
-    amountPaid: 21000,
-    totalAmount: 35000,
-  },
-  {
-    id: 3,
-    title: "Digital Marketing Mastery",
-    progress: 100, // Fully paid (no installment)
-    nextLesson: "SEO Strategies",
-    mode: "Online",
-    isInstallment: false,
-  },
-];
+interface EnrolledCourse {
+  id: number;
+  title: string;
+  progress: number;
+  nextLesson: string;
+  mode: string;
+  isInstallment: boolean;
+  installmentsPaid?: number;
+  totalInstallments?: number;
+  amountPaid?: number;
+  totalAmount?: number;
+}
 
-const upcomingPayments = [
-  {
-    course: "Web Development Bootcamp",
-    amount: 15000,
-    dueDate: "Feb 5, 2026",
-  },
-  {
-    course: "Data Science Fundamentals",
-    amount: 20000,
-    dueDate: "Feb 12, 2026",
-  },
-];
+interface UpcomingPayment {
+  course: string;
+  amount: number;
+  dueDate: string;
+}
 
-const recentActivity = [
-  { action: "Completed lesson", course: "Web Development", time: "2 hours ago" },
-  { action: "Payment received", course: "UI/UX Design", time: "1 day ago" },
-  { action: "Enrolled in course", course: "Data Science", time: "3 days ago" },
-];
+interface RecentActivityItem {
+  action: string;
+  course: string;
+  time: string;
+}
+
+// Default empty data for new users
+const getDefaultUserData = (): UserData => ({
+  enrolledCourses: 0,
+  completedCourses: 0,
+  upcomingPayments: 0,
+  totalSpent: 0,
+});
+
+const getDefaultEnrolledCourses = (): EnrolledCourse[] => [];
+const getDefaultUpcomingPayments = (): UpcomingPayment[] => [];
+const getDefaultRecentActivity = (): RecentActivityItem[] => [];
 
 export default function DashboardContent({ user }: DashboardContentProps) {
+  // State for dynamic data - initialized with empty/zero values for new users
+  const [userData, setUserData] = useState<UserData>(getDefaultUserData());
+  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>(getDefaultEnrolledCourses());
+  const [upcomingPayments, setUpcomingPayments] = useState<UpcomingPayment[]>(getDefaultUpcomingPayments());
+  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>(getDefaultRecentActivity());
+
+  // TODO: Fetch actual user data from Supabase when enrollments/payments tables are ready
+  // useEffect(() => {
+  //   async function fetchUserData() {
+  //     if (user.id) {
+  //       // Fetch enrollments, payments, etc. from Supabase
+  //     }
+  //   }
+  //   fetchUserData();
+  // }, [user.id]);
+
   const welcomeText = `Welcome, ${user.name || "User"}! 👋`;
   const displayedText = useTypewriter(welcomeText, 80, 0); // 80ms speed, no delay
   const subtitleText = useTypewriter(
@@ -258,59 +258,86 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                 </Link>
               </div>
 
-              {enrolledCourses.map((course, index) => (
+              {enrolledCourses.length === 0 ? (
                 <motion.div
-                  key={course.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                  whileHover={{ scale: 1.02, y: -4 }}
-                  className="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-8 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 text-center"
                 >
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <div className="w-full sm:w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                      <BookOpen className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="flex-1 space-y-3">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                        <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
-                            {course.title}
-                          </h3>
-                          <span className="inline-block px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full mt-2 font-medium">
-                            {course.mode}
-                          </span>
-                        </div>
-                      </div>
-                      {/* Payment status badge */}
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {course.isInstallment 
-                          ? `₦${course.amountPaid?.toLocaleString()} of ₦${course.totalAmount?.toLocaleString()} paid`
-                          : "Fully Paid"
-                        }
-                      </p>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-600 dark:text-gray-400 font-medium">
-                            Payment Progress {course.isInstallment ? `(${course.installmentsPaid}/${course.totalInstallments})` : ""}
-                          </span>
-                          <span className="font-bold text-green-600 dark:text-green-400">
-                            {course.progress}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${course.progress}%` }}
-                            transition={{ duration: 1, delay: 0.7 + index * 0.1 }}
-                            className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full"
-                          />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center">
+                    <BookOpen className="w-8 h-8 text-blue-500 dark:text-blue-400" />
                   </div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    No courses yet
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    You haven&apos;t enrolled in any courses yet. Start your learning journey today!
+                  </p>
+                  <Link href="/courses">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-6 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-medium"
+                    >
+                      Browse Courses
+                    </motion.button>
+                  </Link>
                 </motion.div>
-              ))}
+              ) : (
+                enrolledCourses.map((course: EnrolledCourse, index: number) => (
+                  <motion.div
+                    key={course.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                    whileHover={{ scale: 1.02, y: -4 }}
+                    className="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700"
+                  >
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <div className="w-full sm:w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-10 h-10 text-white" />
+                      </div>
+                      <div className="flex-1 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                              {course.title}
+                            </h3>
+                            <span className="inline-block px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full mt-2 font-medium">
+                              {course.mode}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Payment status badge */}
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {course.isInstallment 
+                            ? `₦${course.amountPaid?.toLocaleString()} of ₦${course.totalAmount?.toLocaleString()} paid`
+                            : "Fully Paid"
+                          }
+                        </p>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400 font-medium">
+                              Payment Progress {course.isInstallment ? `(${course.installmentsPaid}/${course.totalInstallments})` : ""}
+                            </span>
+                            <span className="font-bold text-green-600 dark:text-green-400">
+                              {course.progress}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${course.progress}%` }}
+                              transition={{ duration: 1, delay: 0.7 + index * 0.1 }}
+                              className="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
             </motion.div>
 
             {/* Sidebar */}
@@ -327,28 +354,37 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                   </h3>
                 </div>
                 <div className="p-4 sm:p-6 space-y-4">
-                  {upcomingPayments.map((payment, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.8 + index * 0.1 }}
-                      whileHover={{ scale: 1.02 }}
-                      className="p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl space-y-2 border border-orange-100 dark:border-orange-800"
-                    >
-                      <p className="font-semibold text-sm text-gray-900 dark:text-white">
-                        {payment.course}
+                  {upcomingPayments.length === 0 ? (
+                    <div className="text-center py-4">
+                      <Calendar className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        No upcoming payments scheduled
                       </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-bold text-orange-600 dark:text-orange-400">
-                          ₦{payment.amount.toLocaleString()}
-                        </span>
-                        <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                          Due {payment.dueDate}
-                        </span>
-                      </div>
-                    </motion.div>
-                  ))}
+                    </div>
+                  ) : (
+                    upcomingPayments.map((payment: UpcomingPayment, index: number) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.8 + index * 0.1 }}
+                        whileHover={{ scale: 1.02 }}
+                        className="p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl space-y-2 border border-orange-100 dark:border-orange-800"
+                      >
+                        <p className="font-semibold text-sm text-gray-900 dark:text-white">
+                          {payment.course}
+                        </p>
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                            ₦{payment.amount.toLocaleString()}
+                          </span>
+                          <span className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                            Due {payment.dueDate}
+                          </span>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
                   <Link href="/dashboard/payments">
                     <motion.button
                       whileHover={{ scale: 1.02 }}
@@ -373,38 +409,47 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                   </h3>
                 </div>
                 <div className="p-4 sm:p-6 space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 1 + index * 0.1 }}
-                      className="flex gap-3 items-start"
-                    >
+                  {recentActivity.length === 0 ? (
+                    <div className="text-center py-4">
+                      <Clock className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                        No recent activity
+                      </p>
+                    </div>
+                  ) : (
+                    recentActivity.map((activity: RecentActivityItem, index: number) => (
                       <motion.div
-                        animate={{
-                          scale: [1, 1.2, 1],
-                        }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          delay: index * 0.3,
-                        }}
-                        className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mt-2"
-                      />
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                          {activity.action}
-                        </p>
-                        <p className="text-xs text-gray-600 dark:text-gray-400">
-                          {activity.course}
-                        </p>
-                        <p className="text-xs text-gray-400 dark:text-gray-500">
-                          {activity.time}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
+                        key={index}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 1 + index * 0.1 }}
+                        className="flex gap-3 items-start"
+                      >
+                        <motion.div
+                          animate={{
+                            scale: [1, 1.2, 1],
+                          }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            delay: index * 0.3,
+                          }}
+                          className="w-2 h-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mt-2"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                            {activity.action}
+                          </p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">
+                            {activity.course}
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500">
+                            {activity.time}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
                 </div>
               </motion.div>
             </motion.div>

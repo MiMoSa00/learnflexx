@@ -22,28 +22,41 @@ export async function POST(req: NextRequest) {
       throw new Error("Missing API Credentials (API Key or Secret Key)");
     }
 
-    // Helper function to encrypt BVN using AES
-    const encryptBVN = (bvn: string, key: string): string => {
-      // OnePipe typically uses AES-256-CBC encryption
-      const keyBuffer = Buffer.from(key.padEnd(32, '0').substring(0, 32));
-      const iv = Buffer.alloc(16, 0);
+    // Helper function to encrypt using Triple DES (3DES) - OnePipe's expected encryption
+    const encrypt3DES = (sharedKey: string, plainText: string): string => {
+      // Step 1: Convert shared key to UTF-16LE buffer
+      const bufferedKey = Buffer.from(sharedKey, 'utf16le');
 
-      const cipher = crypto.createCipheriv('aes-256-cbc', keyBuffer, iv);
-      let encrypted = cipher.update(bvn, 'utf8', 'hex');
-      encrypted += cipher.final('hex');
-      return encrypted;
+      // Step 2: Create MD5 hash of the key
+      const key = crypto.createHash('md5').update(bufferedKey).digest();
+
+      // Step 3: Create 24-byte key for 3DES by concatenating MD5 hash (16 bytes) + first 8 bytes
+      const newKey = Buffer.concat([key, key.slice(0, 8)]);
+
+      // Step 4: Use 8-byte zero-filled IV
+      const IV = Buffer.alloc(8, 0);
+
+      // Step 5: Encrypt with Triple DES CBC mode
+      const cipher = crypto.createCipheriv('des-ede3-cbc', newKey, IV).setAutoPadding(true);
+      return cipher.update(plainText, 'utf8', 'base64') + cipher.final('base64');
     };
 
-    // 1. Inject server-side secure details into body and encrypt BVN
+    // 1. Encrypt BVN using Triple DES (auth.secure gets plain secret key)
     const encryptedBVN = body.transaction?.meta?.bvn
-      ? encryptBVN(body.transaction.meta.bvn, secretKey)
+      ? encrypt3DES(secretKey, body.transaction.meta.bvn)
       : null;
+    const encryptedSecure = encrypt3DES(secretKey, `${body.transaction?.customer?.account_number};${body.transaction?.customer?.bank_code}`);
+
+    console.log("Encryption Debug:");
+    console.log("Original BVN:", body.transaction?.meta?.bvn);
+    console.log("Encrypted BVN (3DES Base64):", encryptedBVN);
+    console.log("Encrypted Secure (3DES Base64):", encryptedSecure);
 
     const finalBody = {
       ...body,
       auth: {
         ...body.auth,
-        secure: secretKey,
+        secure: encryptedSecure,  // Plain secret key, NOT encrypted
         auth_provider: "PaywithAccount"
       },
       transaction: {
@@ -62,7 +75,15 @@ export async function POST(req: NextRequest) {
     }
 
     const signatureString = `${finalBody.request_ref};${secretKey}`;
-    const signature = crypto.createHash('md5').update(signatureString).digest('hex');
+
+    // Debug: Log the exact string being hashed (mask part of secret for security)
+    console.log("Signature String Format: [request_ref];[secret_key]");
+    console.log("Request Ref:", finalBody.request_ref);
+    console.log("Secret Key Length:", secretKey.length);
+    console.log("Full Signature String (for debug):", signatureString);
+
+    // Explicitly use UTF-8 encoding to match the Postman MD5 implementation
+    const signature = crypto.createHash('md5').update(signatureString, 'utf8').digest('hex');
 
     // Send request to OnePipe API
     const endpoint = baseUrl.endsWith('/v2') ? `${baseUrl}/transact` : `${baseUrl}/v2/transact`;

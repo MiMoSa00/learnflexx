@@ -47,75 +47,31 @@ import {
 } from "lucide-react"
 import { cn } from "@/app/lib/utils"
 
-// Mock payment data
-const paymentHistory = [
-  {
-    id: "PAY-2026-001",
-    date: "2026-01-15",
-    courseName: "Full Stack Web Development Bootcamp",
-    amount: 150000,
-    paymentMethod: "Bank Transfer",
-    status: "completed",
-    receiptUrl: "#"
-  },
-  {
-    id: "PAY-2026-002",
-    date: "2026-01-12",
-    courseName: "Business Management Certificate",
-    amount: 40000,
-    paymentMethod: "Bank Transfer",
-    status: "completed",
-    receiptUrl: "#"
-  },
-  {
-    id: "PAY-2026-003",
-    date: "2026-01-10",
-    courseName: "Professional Photography Masterclass",
-    amount: 85000,
-    paymentMethod: "Direct Debit",
-    status: "completed",
-    receiptUrl: "#"
-  },
-  {
-    id: "PAY-2025-098",
-    date: "2025-12-05",
-    courseName: "Digital Marketing & Social Media",
-    amount: 65000,
-    paymentMethod: "Bank Transfer",
-    status: "completed",
-    receiptUrl: "#"
-  },
-  {
-    id: "PAY-2025-089",
-    date: "2025-11-28",
-    courseName: "UI/UX Design Fundamentals",
-    amount: 95000,
-    paymentMethod: "Bank Transfer",
-    status: "failed",
-    receiptUrl: null
-  },
-]
+// Payment data - initialized as empty for new users
+// TODO: Fetch actual payment data from Supabase based on logged-in user
+interface PaymentHistoryItem {
+  id: string;
+  date: string;
+  courseName: string;
+  amount: number;
+  paymentMethod: string;
+  status: string;
+  receiptUrl: string | null;
+}
 
-const upcomingPayments = [
-  {
-    id: "UP-2026-001",
-    courseName: "Business Management Certificate",
-    dueDate: "2026-02-12",
-    amount: 40000,
-    paymentMethod: "Direct Debit",
-    status: "scheduled",
-    installment: "2/3"
-  },
-  {
-    id: "UP-2026-002",
-    courseName: "Business Management Certificate",
-    dueDate: "2026-03-12",
-    amount: 40000,
-    paymentMethod: "Direct Debit",
-    status: "scheduled",
-    installment: "3/3"
-  },
-]
+interface UpcomingPaymentItem {
+  id: string;
+  courseName: string;
+  dueDate: string;
+  amount: number;
+  paymentMethod: string;
+  status: string;
+  installment: string;
+}
+
+// Empty arrays for new users - will be populated from database
+const paymentHistory: PaymentHistoryItem[] = []
+const upcomingPayments: UpcomingPaymentItem[] = []
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("en-NG", {
@@ -345,61 +301,73 @@ export default function PaymentsPage() {
                   <CardTitle>Transaction History</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Course</TableHead>
-                          <TableHead>Amount</TableHead>
-                          <TableHead>Method</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Receipt</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredHistory.map((payment) => {
-                          const StatusIcon = statusConfig[payment.status as keyof typeof statusConfig].icon
-                          return (
-                            <TableRow key={payment.id}>
-                              <TableCell className="font-mono text-sm">
-                                {formatDate(payment.date)}
-                              </TableCell>
-                              <TableCell>
-                                <div>
-                                  <p className="font-medium text-foreground">{payment.courseName}</p>
-                                  <p className="text-xs text-muted-foreground">{payment.id}</p>
-                                </div>
-                              </TableCell>
-                              <TableCell className="font-semibold">
-                                {formatPrice(payment.amount)}
-                              </TableCell>
-                              <TableCell className="text-sm text-muted-foreground">
-                                {payment.paymentMethod}
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={cn("flex items-center gap-1 w-fit", statusConfig[payment.status as keyof typeof statusConfig].color)}>
-                                  <StatusIcon className="w-3 h-3" />
-                                  {statusConfig[payment.status as keyof typeof statusConfig].label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {payment.receiptUrl && (
-                                  <BouncyButton
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleDownloadReceipt(payment.id)}
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </BouncyButton>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  {filteredHistory.length === 0 ? (
+                    <div className="text-center py-12">
+                      <CreditCard className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        No payment history yet
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        Your payment transactions will appear here once you make a purchase.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Course</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Method</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Receipt</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredHistory.map((payment) => {
+                            const StatusIcon = statusConfig[payment.status as keyof typeof statusConfig].icon
+                            return (
+                              <TableRow key={payment.id}>
+                                <TableCell className="font-mono text-sm">
+                                  {formatDate(payment.date)}
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium text-foreground">{payment.courseName}</p>
+                                    <p className="text-xs text-muted-foreground">{payment.id}</p>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="font-semibold">
+                                  {formatPrice(payment.amount)}
+                                </TableCell>
+                                <TableCell className="text-sm text-muted-foreground">
+                                  {payment.paymentMethod}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge className={cn("flex items-center gap-1 w-fit", statusConfig[payment.status as keyof typeof statusConfig].color)}>
+                                    <StatusIcon className="w-3 h-3" />
+                                    {statusConfig[payment.status as keyof typeof statusConfig].label}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  {payment.receiptUrl && (
+                                    <BouncyButton
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleDownloadReceipt(payment.id)}
+                                    >
+                                      <Download className="w-4 h-4" />
+                                    </BouncyButton>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>

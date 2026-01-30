@@ -39,19 +39,27 @@ const courseData: Record<string, {
   "1": {
     title: "Full Stack Web Development Bootcamp",
     provider: "TechHub Academy",
-    price: 150000,
-    originalPrice: 200000,
+    price: 200,
   },
   "2": {
     title: "Professional Photography Masterclass",
     provider: "Creative Vision Studios",
-    price: 85000,
+    price: 200,
+  },
+  "3": {
+    title: "Digital Marketing & Social Media",
+    provider: "Growth Academy",
+    price: 200,
+  },
+  "4": {
+    title: "UI/UX Design Fundamentals",
+    provider: "Design Masters",
+    price: 200,
   },
   "5": {
     title: "Business Management Certificate",
     provider: "Executive Learning",
-    price: 120000,
-    originalPrice: 150000,
+    price: 200,
   },
 }
 

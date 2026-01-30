@@ -46,8 +46,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header 
-          onMenuClick={() => setSidebarOpen(true)}
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           showMenuButton={false}
+          isSidebarOpen={sidebarOpen}
         />
         <div className="flex flex-1 pt-14 sm:pt-16 md:pt-[72px]">
           <main className="flex-1 lg:ml-0 min-h-[calc(100vh-80px)]">
@@ -64,8 +65,9 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex flex-col">
       {/* Header - fixed at top */}
       <Header 
-        onMenuClick={() => setSidebarOpen(true)}
+        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         showMenuButton={isLoggedIn} // Only show hamburger if logged in
+        isSidebarOpen={sidebarOpen}
       />
 
       {/* Content area with sidebar */}

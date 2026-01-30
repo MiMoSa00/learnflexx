@@ -46,8 +46,8 @@ const courseData = {
     id: "1",
     title: "Full Stack Web Development Bootcamp",
     provider: "TechHub Academy",
-    price: 150000,
-    originalPrice: 200000,
+    price: 200,
+    originalPrice: null,
     duration: "12 weeks",
     mode: "Online",
     rating: 4.9,
@@ -94,7 +94,8 @@ const courseData = {
     id: "2",
     title: "Professional Photography Masterclass",
     provider: "Creative Vision Studios",
-    price: 85000,
+    price: 200,
+    originalPrice: null,
     duration: "8 weeks",
     mode: "Hybrid",
     rating: 4.7,
@@ -142,8 +143,8 @@ const courseData = {
     id: "3",
     title: "Digital Marketing & Social Media",
     provider: "Growth Academy",
-    price: 65000,
-    originalPrice: 80000,
+    price: 200,
+    originalPrice: null,
     duration: "6 weeks",
     mode: "Online",
     rating: 4.8,
@@ -189,7 +190,8 @@ const courseData = {
     id: "4",
     title: "UI/UX Design Fundamentals",
     provider: "Design Masters",
-    price: 95000,
+    price: 200,
+    originalPrice: null,
     duration: "10 weeks",
     mode: "Online",
     rating: 4.6,
@@ -235,8 +237,8 @@ const courseData = {
     id: "5",
     title: "Business Management Certificate",
     provider: "Executive Learning",
-    price: 120000,
-    originalPrice: 150000,
+    price: 200,
+    originalPrice: null,
     duration: "16 weeks",
     mode: "Offline",
     rating: 4.9,
@@ -294,7 +296,7 @@ function formatPrice(price: number) {
 export default function CourseDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   
   const courseId = params?.id as string || ""
   const [userPurchases, setUserPurchases] = useState<Record<string, CoursePurchase>>({})
@@ -331,12 +333,21 @@ export default function CourseDetailPage() {
   const hasPendingPayment = hasPendingPaymentForCourse(userPurchases, courseId)
   const accessLink = getCourseAccessLink(userPurchases, courseId)
 
+  // Check if user is logged in and redirect accordingly
   const handleEnrollClick = () => {
-    if (!session) {
-      router.push(`/checkout/login?course=${courseId}`)
+    // If session is still loading, wait a moment
+    if (status === "loading") {
       return
     }
-    router.push(`/checkout/review?course=${courseId}`)
+    
+    // If user is authenticated (logged in), skip login and go directly to review
+    if (status === "authenticated" && session) {
+      router.push(`/checkout/review?course=${courseId}`)
+      return
+    }
+    
+    // If user is not authenticated (not logged in), redirect to login
+    router.push(`/checkout/login?course=${courseId}`)
   }
 
   const handleAccessCourse = () => {

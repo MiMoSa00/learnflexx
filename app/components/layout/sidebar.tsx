@@ -100,15 +100,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "sticky left-0 bg-card dark:bg-gray-800 border-r border-border dark:border-gray-700 transition-transform duration-300",
-          "w-[280px] lg:w-[30%] max-w-[320px]",
-          "top-[80px]",
-          "self-start",
-          "h-[calc(100vh-100px)]",
+          "bg-card dark:bg-gray-800 border-r border-border dark:border-gray-700 transition-transform duration-300",
+          // Desktop: sticky, positioned below header
+          "lg:sticky lg:top-[80px] lg:w-[30%] lg:max-w-[320px] lg:h-[calc(100vh-100px)] lg:self-start",
+          // Mobile: fixed, full screen height, full width up to 280px
+          "fixed top-0 left-0 w-[280px] h-screen z-50",
           "overflow-hidden",
           "lg:translate-x-0",
-          "fixed lg:sticky",
-          isOpen ? "translate-x-0 z-50" : "-translate-x-full z-30"
+          isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Close button for mobile */}

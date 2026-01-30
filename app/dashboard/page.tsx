@@ -38,12 +38,11 @@ export default function DashboardPage() {
 
         // Profile is optional - no need to log errors
 
-        // Check Subscription ID - COMMENTED OUT to allow dashboard access without mandate
-        // if (!profile?.subscription_id) {
-        //   // Redirect to mandate creation if no subscription
-        //   router.push("/create-mandate")
-        //   return
-        // }
+        // Check Subscription ID - Redirect to mandate creation if no subscription
+        if (!profile?.subscription_id) {
+          router.push("/create-mandate")
+          return
+        }
 
         // Construct Dashboard User
         const dashboardUser: DashboardUser = {

@@ -21,6 +21,8 @@ export type MandatePayload = {
       surname: string;
       email: string;
       mobile_no: string;
+      account_number: string;
+      bank_code: string;
     };
     meta: {
       amount: string;

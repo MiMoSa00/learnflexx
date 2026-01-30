@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/app/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
+// import { redirect } from "next/navigation";
 
 export default function HomePage() {
   const [loading, setLoading] = useState(false);
@@ -91,12 +92,13 @@ export default function HomePage() {
         accountNumber: '',
         bankCode: '070',
         bvn: '',
-        amount: '100000',
+        amount: '100',
         billerCode: '000752',
         repeatEndDate: '2026-07-28',
         repeatFrequency: 'MONTHLY'
       });
 
+    
     } catch (err: any) {
       console.error('❌ Error creating mandate:', err);
       setError(err.message);

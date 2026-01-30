@@ -27,9 +27,10 @@ const categories = [
 interface HeaderProps {
   onMenuClick?: () => void
   showMenuButton?: boolean
+  isSidebarOpen?: boolean
 }
 
-export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
+export function Header({ onMenuClick, showMenuButton = false, isSidebarOpen = false }: HeaderProps) {
   const supabase = createClient()
   const router = useRouter()
   const pathname = usePathname()
@@ -137,9 +138,13 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
               <button
                 onClick={onMenuClick}
                 className="lg:hidden p-1 sm:p-1.5 hover:bg-muted rounded-lg transition-colors"
-                aria-label="Open sidebar"
+                aria-label={isSidebarOpen ? "Close sidebar" : "Open sidebar"}
               >
-                <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
+                {isSidebarOpen ? (
+                  <X className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
+                ) : (
+                  <Menu className="w-5 h-5 sm:w-6 sm:h-6 text-foreground" />
+                )}
               </button>
             )}
 

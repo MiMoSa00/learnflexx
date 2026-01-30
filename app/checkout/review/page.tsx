@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { useSession } from "next-auth/react"
+import { createClient } from "@/app/lib/supabase/client"
 import Link from "next/link"
 import { ScrollReveal } from "@/app/components/layout/animations/scroll-reveal"
 import { BouncyButton } from "@/app/components/layout/animations/bouncy-button"
@@ -28,9 +28,19 @@ import {
   // Phone,
   AlertCircle,
   Sparkles,
+  Loader2,
 } from "lucide-react"
 import { cn } from "@/app/lib/utils"
 import { Suspense } from "react"
+
+// User data interface
+interface UserData {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  isMember: boolean
+}
 
 // Mock course data
 const courseData: Record<string, {
@@ -43,46 +53,35 @@ const courseData: Record<string, {
   "1": {
     title: "Full Stack Web Development Bootcamp",
     provider: "TechHub Academy",
-    price: 150000,
-    originalPrice: 200000,
+    price: 200,
     category: "Digital Skills",
   },
   "2": {
     title: "Professional Photography Masterclass",
     provider: "Creative Vision Studios",
-    price: 85000,
+    price: 200,
     category: "Creative Arts",
   },
   "3": {
     title: "Digital Marketing & Social Media",
     provider: "Growth Academy",
-    price: 65000,
-    originalPrice: 80000,
+    price: 200,
     category: "Business",
   },
   "4": {
     title: "UI/UX Design Fundamentals",
     provider: "Design Masters",
-    price: 95000,
+    price: 200,
     category: "Digital Skills",
   },
   "5": {
     title: "Business Management Certificate",
     provider: "Executive Learning",
-    price: 120000,
-    originalPrice: 150000,
+    price: 200,
     category: "Business",
   },
 }
 
-// Mock user data (in real app, from session)
-const mockUser = {
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  phone: "+234 803 123 4567",
-  isMember: true,
-}
 
 // Mock promo codes
 const promoCodes: Record<string, { discount: number; type: "percentage" | "fixed" }> = {
@@ -115,10 +114,14 @@ export default function CheckoutReviewPage() {
 
 function ReviewPageContent() {
   const router = useRouter()
-  const { data: _session } = useSession()
+  const supabase = createClient()
   const searchParams = useSearchParams()
   const courseId = searchParams?.get('course') || "1"
 
+  // User state - fetch from Supabase
+  const [user, setUser] = useState<UserData | null>(null)
+  const [userLoading, setUserLoading] = useState(true)
+  
   const [paymentPlan, setPaymentPlan] = useState<"full" | "installment">("full")
   const [installmentMonths, setInstallmentMonths] = useState(3)
   const [promoCode, setPromoCode] = useState("")
@@ -127,8 +130,58 @@ function ReviewPageContent() {
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [loading, setLoading] = useState(false)
 
+  // Fetch user data from Supabase
+  useEffect(() => {
+    async function fetchUserData() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        
+        if (!session?.user) {
+          // User not logged in, redirect to login
+          router.push(`/checkout/login?course=${courseId}`)
+          return
+        }
+
+        // Get user profile from users table
+        const { data: profile, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+
+        if (error) {
+          console.error('Error fetching user profile:', error)
+          // Fall back to session metadata
+          const fullName = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || ''
+          const nameParts = fullName.split(' ')
+          
+          setUser({
+            firstName: nameParts[0] || '',
+            lastName: nameParts.slice(1).join(' ') || '',
+            email: session.user.email || '',
+            phone: session.user.user_metadata?.phone || '',
+            isMember: false,
+          })
+        } else {
+          setUser({
+            firstName: profile.first_name || '',
+            lastName: profile.last_name || '',
+            email: profile.email || session.user.email || '',
+            phone: profile.phone || '',
+            isMember: profile.is_member || false,
+          })
+        }
+      } catch (err) {
+        console.error('Error in fetchUserData:', err)
+      } finally {
+        setUserLoading(false)
+      }
+    }
+
+    fetchUserData()
+  }, [supabase, router, courseId])
+
   const course = courseData[courseId]
-  const user = mockUser // In real app: session?.user
 
   // Calculate pricing
   const basePrice = course?.price || 0
@@ -209,6 +262,18 @@ function ReviewPageContent() {
     }, 800)
   }
 
+  // Show loading while fetching user data
+  if (userLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading your information...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!course) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -281,19 +346,19 @@ function ReviewPageContent() {
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Name</p>
                       <p className="font-medium text-foreground">
-                        {user.firstName} {user.lastName}
+                        {user?.firstName} {user?.lastName}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-muted-foreground mb-1">Email</p>
-                      <p className="font-medium text-foreground">{user.email}</p>
+                      <p className="font-medium text-foreground">{user?.email || 'Not provided'}</p>
                     </div>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Phone</p>
-                    <p className="font-medium text-foreground">{user.phone}</p>
+                    <p className="font-medium text-foreground">{user?.phone || 'Not provided'}</p>
                   </div>
-                  {user.isMember && (
+                  {user?.isMember && (
                     <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
                       <Sparkles className="w-3 h-3 mr-1" />
                       Member - 10% Discount Applied
