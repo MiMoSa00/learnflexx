@@ -4,10 +4,9 @@ import { motion } from "framer-motion";
 import {
   BookOpen,
   Calendar,
-  DollarSign,
+  Wallet,
   Clock,
   Award,
-  Play,
   ChevronRight,
 } from "lucide-react";
 import Link from "next/link";
@@ -93,23 +92,34 @@ const enrolledCourses = [
   {
     id: 1,
     title: "Web Development Bootcamp",
-    progress: 65,
+    progress: 40, // Payment progress: 2 of 5 installments paid
     nextLesson: "React Hooks Advanced",
     mode: "Online",
+    isInstallment: true,
+    installmentsPaid: 2,
+    totalInstallments: 5,
+    amountPaid: 18000,
+    totalAmount: 45000,
   },
   {
     id: 2,
     title: "Data Science Fundamentals",
-    progress: 30,
-    nextLesson: "Introduction to Pandas",
-    mode: "Offline",
+    progress: 60, // Payment progress: 3 of 5 installments paid
+    nextLesson: "Python for Data Analysis",
+    mode: "Hybrid",
+    isInstallment: true,
+    installmentsPaid: 3,
+    totalInstallments: 5,
+    amountPaid: 21000,
+    totalAmount: 35000,
   },
   {
     id: 3,
-    title: "UI/UX Design Masterclass",
-    progress: 80,
-    nextLesson: "Prototyping with Figma",
+    title: "Digital Marketing Mastery",
+    progress: 100, // Fully paid (no installment)
+    nextLesson: "SEO Strategies",
     mode: "Online",
+    isInstallment: false,
   },
 ];
 
@@ -133,7 +143,7 @@ const recentActivity = [
 ];
 
 export default function DashboardContent({ user }: DashboardContentProps) {
-  const welcomeText = `Welcome back, ${user.name || "User"}! 👋`;
+  const welcomeText = `Welcome, ${user.name || "User"}! 👋`;
   const displayedText = useTypewriter(welcomeText, 80, 0); // 80ms speed, no delay
   const subtitleText = useTypewriter(
     "Here's what's happening with your learning journey",
@@ -204,7 +214,7 @@ export default function DashboardContent({ user }: DashboardContentProps) {
               {
                 title: "Total Spent",
                 value: `₦${userData.totalSpent.toLocaleString()}`,
-                icon: DollarSign,
+                icon: Wallet,
                 gradient: "from-purple-500 to-purple-600",
                 delay: 0.4,
               },
@@ -234,7 +244,7 @@ export default function DashboardContent({ user }: DashboardContentProps) {
             <motion.div variants={itemVariants} className="lg:col-span-2 space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                  Continue Learning
+                  My Courses
                 </h2>
                 <Link href="/dashboard/courses">
                   <motion.button
@@ -271,26 +281,20 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                             {course.mode}
                           </span>
                         </div>
-                        <Link href={`/dashboard/courses/${course.id}`}>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white text-sm rounded-xl flex items-center gap-2 hover:bg-blue-700 dark:hover:bg-blue-600 shadow-md w-full sm:w-auto justify-center"
-                          >
-                            <Play className="w-4 h-4" />
-                            Continue
-                          </motion.button>
-                        </Link>
                       </div>
+                      {/* Payment status badge */}
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Next: {course.nextLesson}
+                        {course.isInstallment 
+                          ? `₦${course.amountPaid?.toLocaleString()} of ₦${course.totalAmount?.toLocaleString()} paid`
+                          : "Fully Paid"
+                        }
                       </p>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-600 dark:text-gray-400 font-medium">
-                            Progress
+                            Payment Progress {course.isInstallment ? `(${course.installmentsPaid}/${course.totalInstallments})` : ""}
                           </span>
-                          <span className="font-bold text-blue-600 dark:text-blue-400">
+                          <span className="font-bold text-green-600 dark:text-green-400">
                             {course.progress}%
                           </span>
                         </div>

@@ -1,8 +1,6 @@
 "use client"
 
-import React from "react"
-
-import { useState } from "react"
+import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { signIn } from "next-auth/react"
@@ -29,6 +27,8 @@ import {
   ChevronRight,
 } from "lucide-react"
 import { cn } from "@/app/lib/utils"
+// import { setCurrentUser } from "@/app/lib/localStorage-auth"
+import { createClient } from "@/app/lib/supabase/client"
 
 const nigerianStates = [
   "Lagos",
@@ -74,6 +74,7 @@ function getStrengthScore(strength: PasswordStrength): number {
 }
 
 export default function SignupPage() {
+  const supabase = createClient()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -141,43 +142,63 @@ export default function SignupPage() {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault()
+    e.preventDefault()
 
-  if (!validateForm()) return
+    if (!validateForm()) return
 
-  setIsLoading(true)
+    setIsLoading(true)
 
-  try {
-    // Note: phone and location aren't used in auth yet
-    // but you can store them in your database later
-    const result = await signIn("credentials", {
-      email: formData.email,
-      password: formData.password,
-      fullName: formData.fullName,
-      isSignup: "true",
-      redirect: false,
-    })
+    try {
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            phone: formData.phone,
+            location: formData.location,
+          },
+        },
+      })
 
-    if (result?.error) {
-      setErrors({ submit: result.error })
-    } else if (result?.ok) {
-      // Successfully signed up and logged in
-      router.push("/dashboard")
-      router.refresh()
+      if (error) {
+        throw error
+      }
+
+      // Profile creation is now handled by a Database Trigger (SUPABASE_TRIGGER.sql)
+
+      if (data.session) {
+        // User is signed in
+        router.push("/dashboard")
+        router.refresh()
+      } else if (data.user) {
+        // Email confirmation required
+        alert("Account created! Please check your email to confirm.")
+        router.push("/login")
+      }
+      
+    } catch (err: any) {
+      setErrors({ submit: err.message || "Signup failed. Please try again." })
+    } finally {
+      setIsLoading(false)
     }
-  } catch (err) {
-    setErrors({ submit: "An error occurred. Please try again." })
-  } finally {
-    setIsLoading(false)
   }
-}
 
   const handleGoogleSignUp = async () => {
     setIsLoading(true)
     try {
-      await signIn("google", { redirect: true, callbackUrl: "/dashboard" })
-    } catch (err) {
-      setErrors({ submit: "Google sign-up failed. Please try again." })
+      // Use Supabase Google Auth
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        }
+      })
+      
+      if (error) throw error
+    } catch (err: any) {
+      setErrors({ submit: err.message || "Google sign-up failed." })
       setIsLoading(false)
     }
   }

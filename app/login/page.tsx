@@ -3,16 +3,18 @@
 import React, { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { signIn } from "next-auth/react"
+// import { signIn } from "next-auth/react"
 import { Header } from "@/app/components/layout/header"
 import { ScrollReveal } from "@/app/components/layout/animations/scroll-reveal"
 import { BouncyButton } from "@/app/components/layout/animations/bouncy-button"
 import { Input } from "@/app/components/ui/input"
 import { Label } from "@/app/components/ui/label"
 import { Eye, EyeOff, Loader2, ChevronRight } from "lucide-react"
-
+// import { setCurrentUser } from "@/app/lib/localStorage-auth"
+import { createClient } from "@/app/lib/supabase/client"
 
 export default function LoginPage() {
+  const supabase = createClient()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -34,20 +36,19 @@ export default function LoginPage() {
     setError("")
 
     try {
-      const result = await signIn("credentials", {
+      const { error: authError } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: formData.password,
-        isSignup: "false",
-        redirect: false,
       })
 
-      if (result?.error) {
-        setError(result.error)
-      } else if (result?.ok) {
-        router.push("/dashboard")
+      if (authError) {
+        throw authError
       }
-    } catch (err) {
-      setError("An error occurred. Please try again.")
+
+      router.push("/dashboard")
+      router.refresh()
+    } catch (err: any) {
+      setError(err.message || "Login failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -56,9 +57,15 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      await signIn("google", { redirect: true, callbackUrl: "/dashboard" })
-    } catch (err) {
-      setError("Google sign-in failed. Please try again.")
+       const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        }
+      })
+      if (error) throw error
+    } catch (err: any) {
+      setError(err.message || "Google sign-in failed. Please try again.")
       setIsLoading(false)
     }
   }

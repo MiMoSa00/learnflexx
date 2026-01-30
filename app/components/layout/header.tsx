@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { usePathname } from "next/navigation"
-import { useSession, signOut } from "next-auth/react"
+import { usePathname, useRouter } from "next/navigation"
+import { createClient } from "@/app/lib/supabase/client"
 import { cn } from "@/app/lib/utils"
 import { Button } from "@/app/components/ui/button"
 import {
@@ -30,16 +30,52 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
-  const { data: session, status } = useSession()
+  const supabase = createClient()
+  const router = useRouter()
   const pathname = usePathname()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isDark, setIsDark] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [user, setUser] = useState<any>(null)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Check for logged-in user
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+         // Get extra details if needed, or just use metadata
+         setUser({
+            name: session.user.user_metadata?.full_name || "User",
+            email: session.user.email,
+            image: session.user.user_metadata?.avatar_url,
+         })
+      } else {
+         setUser(null)
+      }
+    }
+    
+    fetchUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+         setUser({
+            name: session.user.user_metadata?.full_name || "User",
+            email: session.user.email,
+            image: session.user.user_metadata?.avatar_url,
+         })
+      } else {
+         setUser(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+
+  }, [pathname])
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
@@ -72,21 +108,24 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
   }
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/" })
+    await supabase.auth.signOut()
+    setUser(null)
+    router.push("/")
+    router.refresh()
   }
 
   // Determine which hamburger to show
   const isHomePage = pathname === "/"
-  const shouldShowSidebarHamburger = session && showMenuButton && onMenuClick
-  const shouldHideMainHamburger = !session && isHomePage
+  const shouldShowSidebarHamburger = user && showMenuButton && onMenuClick
+  const shouldHideMainHamburger = !user && isHomePage
 
   return (
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
         isScrolled
-          ? "bg-background/95 backdrop-blur-md shadow-lg py-2 sm:py-3"
-          : "bg-transparent py-3 sm:py-5"
+          ? "bg-background/95 backdrop-blur-md shadow-lg py-1.5 sm:py-2 md:py-2.5"
+          : "bg-transparent py-2 sm:py-3 md:py-4"
       )}
     >
       <div className="container mx-auto px-3 sm:px-4">
@@ -106,12 +145,12 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
 
             {/* Logo - Closer to left edge */}
             <Link href="/" className="flex items-center group -ml-2 sm:-ml-1">
-              <div className="relative w-20 h-7 sm:w-28 sm:h-9 md:w-36 md:h-11 transition-transform duration-300 group-hover:scale-105">
+              <div className="relative w-20 h-7 sm:w-24 sm:h-8 md:w-32 md:h-10 transition-transform duration-300 group-hover:scale-105">
                 <Image
                   src="/images/flexlogo.jpeg"
                   alt="LearnFlex Logo"
                   fill
-                  sizes="(max-width: 640px) 80px, (max-width: 768px) 112px, 144px"
+                  sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, 128px"
                   className="object-contain"
                   priority
                 />
@@ -120,7 +159,7 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-6 xl:gap-8">
+          <div className="hidden lg:flex items-center gap-4 xl:gap-6">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-1 text-foreground/80 hover:text-primary transition-colors font-medium text-sm xl:text-base">
@@ -160,32 +199,30 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
           </div>
 
           {/* Desktop Actions */}
-          <div className="hidden lg:flex items-center gap-2 xl:gap-4">
-            <Button variant="ghost" size="icon" className="hover:bg-primary/10 h-9 w-9 xl:h-10 xl:w-10">
+          <div className="hidden lg:flex items-center gap-2 xl:gap-3">
+            <Button variant="ghost" size="icon" className="hover:bg-primary/10 h-8 w-8 xl:h-9 xl:w-9">
               <Search className="w-4 h-4 xl:w-5 xl:h-5" />
             </Button>
             <Button 
               variant="ghost" 
               size="icon" 
               onClick={toggleDarkMode}
-              className="hover:bg-primary/10 transition-colors duration-300 h-9 w-9 xl:h-10 xl:w-10"
+              className="hover:bg-primary/10 transition-colors duration-300 h-8 w-8 xl:h-9 xl:w-9"
             >
               {isDark ? <Sun className="w-4 h-4 xl:w-5 xl:h-5" /> : <Moon className="w-4 h-4 xl:w-5 xl:h-5" />}
             </Button>
 
             {/* Auth Section - Desktop */}
             {!mounted ? (
-              <div className="w-20 h-10" />
-            ) : status === "loading" ? (
-              <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
-            ) : session ? (
+              <div className="w-20 h-9" />
+            ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center gap-2 hover:bg-muted px-2 xl:px-3 py-2 rounded-lg transition-colors">
-                    {session.user?.image ? (
+                  <button className="flex items-center gap-2 hover:bg-muted px-2 xl:px-2.5 py-1.5 rounded-lg transition-colors">
+                    {user.image ? (
                       <img 
-                        src={session.user.image} 
-                        alt={session.user.name || "User"} 
+                        src={user.image} 
+                        alt={user.name || "User"} 
                         className="w-7 h-7 xl:w-8 xl:h-8 rounded-full border-2 border-primary"
                       />
                     ) : (
@@ -194,7 +231,7 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
                       </div>
                     )}
                     <span className="text-sm font-medium text-foreground hidden xl:inline max-w-[100px] truncate">
-                      {session.user?.name}
+                      {user.name}
                     </span>
                     <ChevronDown className="w-4 h-4 text-muted-foreground" />
                   </button>
@@ -202,10 +239,10 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
                     <p className="text-sm font-medium text-foreground truncate">
-                      {session.user?.name}
+                      {user.name}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {session.user?.email}
+                      {user.email}
                     </p>
                   </div>
                   <DropdownMenuSeparator />
@@ -234,12 +271,12 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
             ) : (
               <>
                 <Link href="/login">
-                  <Button variant="ghost" size="sm" className="font-semibold hover:bg-primary/10 text-sm">
+                  <Button variant="ghost" size="sm" className="font-semibold hover:bg-primary/10 text-sm h-8 px-3">
                     Log in
                   </Button>
                 </Link>
                 <Link href="/signup">
-                  <Button size="sm" className="btn-bouncy font-semibold bg-primary hover:bg-primary/90 text-primary-foreground text-sm">
+                  <Button size="sm" className="btn-bouncy font-semibold bg-primary hover:bg-primary/90 text-primary-foreground text-sm h-8 px-3">
                     Sign up
                   </Button>
                 </Link>
@@ -251,17 +288,15 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
           <div className="lg:hidden flex items-center gap-1.5 sm:gap-2">
             {/* Mobile User Dropdown - Always visible */}
             {!mounted ? (
-              <div className="w-8 h-8" />
-            ) : status === "loading" ? (
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-muted animate-pulse" />
-            ) : session ? (
+              <div className="w-7 h-7" />
+            ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="p-1 hover:bg-muted rounded-lg transition-colors">
-                    {session.user?.image ? (
+                  <button className="p-0.5 sm:p-1 hover:bg-muted rounded-lg transition-colors">
+                    {user.image ? (
                       <img 
-                        src={session.user.image} 
-                        alt={session.user.name || "User"} 
+                        src={user.image} 
+                        alt={user.name || "User"} 
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-full border-2 border-primary"
                       />
                     ) : (
@@ -274,10 +309,10 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="px-2 py-1.5">
                     <p className="text-sm font-medium text-foreground truncate">
-                      {session.user?.name}
+                      {user.name}
                     </p>
                     <p className="text-xs text-muted-foreground truncate">
-                      {session.user?.email}
+                      {user.email}
                     </p>
                   </div>
                   <DropdownMenuSeparator />
@@ -306,7 +341,7 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors">
+                  <button className="p-1 sm:p-1.5 hover:bg-muted rounded-lg transition-colors">
                     <User className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
                 </DropdownMenuTrigger>
@@ -330,7 +365,7 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
             {/* Hamburger Menu - Hidden on homepage when NOT logged in */}
             {!shouldHideMainHamburger && (
               <button
-                className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors"
+                className="p-1 sm:p-1.5 hover:bg-muted rounded-lg transition-colors"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Toggle menu"
               >
@@ -348,21 +383,21 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
         <div
           className={cn(
             "lg:hidden overflow-hidden transition-all duration-300 ease-in-out",
-            isMobileMenuOpen ? "max-h-[800px] opacity-100 mt-3 sm:mt-4" : "max-h-0 opacity-0"
+            isMobileMenuOpen ? "max-h-[800px] opacity-100 mt-2 sm:mt-3" : "max-h-0 opacity-0"
           )}
         >
-          <div className="bg-card rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-lg border border-border">
-            <div className="flex flex-col gap-1.5 sm:gap-2">
+          <div className="bg-card rounded-xl sm:rounded-2xl p-2.5 sm:p-3 md:p-4 shadow-lg border border-border">
+            <div className="flex flex-col gap-1 sm:gap-1.5">
               {/* Navigation Links */}
               <Link
                 href="/courses"
-                className="px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl hover:bg-muted transition-colors font-medium text-sm sm:text-base"
+                className="px-2.5 sm:px-3 md:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl hover:bg-muted transition-colors font-medium text-sm sm:text-base"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 All Courses
               </Link>
               
-              <div className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-muted-foreground font-medium">
+              <div className="px-2.5 sm:px-3 md:px-4 py-1 sm:py-1.5 text-xs sm:text-sm text-muted-foreground font-medium">
                 Categories
               </div>
               
@@ -370,7 +405,7 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
                 <Link
                   key={category.name}
                   href={category.href}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 pl-6 sm:pl-8 rounded-lg sm:rounded-xl hover:bg-muted transition-colors text-xs sm:text-sm"
+                  className="px-2.5 sm:px-3 md:px-4 py-1 sm:py-1.5 pl-5 sm:pl-6 md:pl-8 rounded-lg sm:rounded-xl hover:bg-muted transition-colors text-xs sm:text-sm"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {category.name}
@@ -379,7 +414,7 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
               
               <Link
                 href="/how-it-works"
-                className="px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl hover:bg-muted transition-colors font-medium text-sm sm:text-base"
+                className="px-2.5 sm:px-3 md:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl hover:bg-muted transition-colors font-medium text-sm sm:text-base"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 How It Works
@@ -387,18 +422,18 @@ export function Header({ onMenuClick, showMenuButton = false }: HeaderProps) {
               
               <Link
                 href="/about"
-                className="px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl hover:bg-muted transition-colors font-medium text-sm sm:text-base"
+                className="px-2.5 sm:px-3 md:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl hover:bg-muted transition-colors font-medium text-sm sm:text-base"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 About
               </Link>
               
-              <div className="border-t border-border my-1.5 sm:my-2" />
+              <div className="border-t border-border my-1 sm:my-1.5" />
               
               {/* Theme Toggle */}
               <button
                 onClick={toggleDarkMode}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg sm:rounded-xl hover:bg-muted transition-colors font-medium flex items-center gap-2 justify-center text-sm sm:text-base"
+                className="w-full px-2.5 sm:px-3 md:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl hover:bg-muted transition-colors font-medium flex items-center gap-2 justify-center text-sm sm:text-base"
               >
                 {isDark ? <Sun className="w-4 h-4 sm:w-5 sm:h-5" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5" />}
                 {isDark ? "Light Mode" : "Dark Mode"}

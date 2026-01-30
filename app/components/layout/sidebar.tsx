@@ -1,8 +1,10 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useSession } from "next-auth/react"
+// import { getCurrentUser } from "@/app/lib/localStorage-auth"
+import { createClient } from "@/app/lib/supabase/client"
 import { cn } from "@/app/lib/utils"
 import { Badge } from "@/app/components/ui/badge"
 import {
@@ -52,8 +54,25 @@ interface SidebarProps {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const supabase = createClient()
   const pathname = usePathname()
-  const { data: session } = useSession()
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  // Check if user is logged in via Supabase
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      setIsLoggedIn(!!session)
+    }
+    checkUser()
+    
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [pathname])
 
   const isActive = (href: string) => {
     if (href === "/dashboard" || href === "/") {
@@ -103,7 +122,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         {/* Navigation */}
         <nav className="h-full overflow-y-auto px-3 py-4">
           <div className="space-y-1">
-            {session ? (
+            {isLoggedIn ? (
               // Show Dashboard menu when logged in
               <>
                 {dashboardMenuItems.map((item) => {
@@ -187,5 +206,3 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     </>
   )
 }
-
-export default Sidebar

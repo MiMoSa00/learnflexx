@@ -31,7 +31,7 @@ export function HeroSection() {
   const [showSuggestions, setShowSuggestions] = useState(true)
 
   return (
-    <section className="relative min-h-screen flex items-center pt-20 sm:pt-24 pb-12 sm:pb-16 overflow-hidden">
+    <section className="relative min-h-[35vh] sm:min-h-[90vh] md:min-h-screen flex items-center pt-9 sm:pt-16 md:pt-24 pb-4 sm:pb-6 md:pb-8 overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 -z-10">
         {/* Gradient background */}
@@ -54,12 +54,12 @@ export function HeroSection() {
       </div>
 
       <div className="container mx-auto px-3 sm:px-4">
-        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
           {/* Left Content */}
           <div className="max-w-2xl">
             {/* Badge */}
             <ScrollReveal direction="up">
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary mb-4 sm:mb-6 animate-fade-in">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/10 text-primary mb-3 sm:mb-4 md:mb-6 animate-fade-in">
                 <Sparkles className="w-3 h-3 sm:w-4 sm:h-4" />
                 <span className="text-xs sm:text-sm font-medium">Over 1,000+ courses available</span>
               </div>
@@ -67,7 +67,7 @@ export function HeroSection() {
 
             {/* Headline with Typewriter */}
             <ScrollReveal direction="up" delay={100}>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-4 sm:mb-6">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-3 sm:mb-4 md:mb-6">
                 <span className="block">Discover courses,</span>
                 <span className="block">
                   learn{" "}
@@ -85,7 +85,7 @@ export function HeroSection() {
 
             {/* Description */}
             <ScrollReveal direction="up" delay={200}>
-              <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8 leading-relaxed">
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground mb-4 sm:mb-6 md:mb-8 leading-relaxed">
                 Find the perfect course from verified providers. Enjoy flexible payment 
                 options including installments, and unlock your potential with quality education.
               </p>
@@ -93,7 +93,7 @@ export function HeroSection() {
 
             {/* Search Bar */}
             <ScrollReveal direction="up" delay={300}>
-              <div className="relative mb-4 sm:mb-6 w-full">
+              <div className="relative mb-3 sm:mb-4 md:mb-6 w-full">
                 <div 
                   className={`relative flex items-center bg-card border-2 rounded-xl sm:rounded-2xl shadow-lg transition-all duration-300 ${
                     isFocused ? "border-primary shadow-primary/20" : "border-border"
@@ -110,7 +110,7 @@ export function HeroSection() {
                       setShowSuggestions(true)
                     }}
                     onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                    className="pl-10 sm:pl-12 pr-2 sm:pr-4 py-4 sm:py-6 text-sm sm:text-base lg:text-lg border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
+                    className="pl-10 sm:pl-12 pr-2 sm:pr-4 py-3.5 sm:py-5 md:py-6 text-sm sm:text-base lg:text-lg border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
                   />
                   <Link href={`/courses?q=${searchQuery}`}>
                     <BouncyButton
@@ -178,7 +178,7 @@ export function HeroSection() {
 
             {/* Trust Indicators */}
             <ScrollReveal direction="up" delay={500}>
-              <div className="flex flex-col sm:flex-row flex-wrap items-center gap-3 sm:gap-4 md:gap-6 mt-8 sm:mt-10 pt-8 sm:pt-10 border-t border-border">
+              <div className="flex flex-col sm:flex-row flex-wrap items-center gap-2.5 sm:gap-4 md:gap-6 mt-4 sm:mt-6 md:mt-10 pt-4 sm:pt-6 md:pt-10 border-t border-border">
                 <div className="flex items-center gap-2">
                   <div className="flex -space-x-2">
                     {[1, 2, 3, 4].map((i) => (
