@@ -4,120 +4,122 @@ import crypto from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("=== MANDATE CREATION REQUEST STARTED ===");
+    console.log("=== CREATE MANDATE STARTED ===");
+
     const body = await req.json();
-    console.log("Request Body Received:", JSON.stringify(body, null, 2));
+    console.log("Incoming Payload:", JSON.stringify(body, null, 2));
 
-    // ✅ Server-side only env vars (NO NEXT_PUBLIC_ prefix for security!)
     const apiKey = process.env.PAYWITHACCOUNT_API_KEY;
-    const secretKey = process.env.PAYWITHACCOUNT_SECRET_KEY?.trim();
-    const baseUrl = process.env.PAYWITHACCOUNT_BASE_URL || "https://api.dev.onepipe.io";
-
-    console.log("Debug Credentials Check:");
-    console.log("API Key Present:", !!apiKey);
-    console.log("Secret Key Present:", !!secretKey);
-    console.log("Base URL:", baseUrl);
+    const secretKey = process.env.PAYWITHACCOUNT_SECRET_KEY;
+    const baseUrl =
+      process.env.PAYWITHACCOUNT_BASE_URL || "https://api.dev.onepipe.io";
 
     if (!apiKey || !secretKey) {
-      throw new Error("Missing API Credentials (API Key or Secret Key)");
+      throw new Error("Missing OnePipe API credentials");
     }
 
-    // Helper function to encrypt using Triple DES (3DES) - OnePipe's expected encryption
-    const encrypt3DES = (sharedKey: string, plainText: string): string => {
-      // Step 1: Convert shared key to UTF-16LE buffer
-      const bufferedKey = Buffer.from(sharedKey, 'utf16le');
+    /**
+     * 3DES Encryption (EXACT OnePipe implementation)
+     */
+    const encrypt3DES = (key: string, text: string): string => {
+      const bufferedKey = Buffer.from(key, "utf16le");
+      const md5Key = crypto.createHash("md5").update(bufferedKey).digest();
+      const finalKey = Buffer.concat([md5Key, md5Key.slice(0, 8)]);
+      const iv = Buffer.alloc(8, "\0");
 
-      // Step 2: Create MD5 hash of the key
-      const key = crypto.createHash('md5').update(bufferedKey).digest();
+      const cipher = crypto.createCipheriv(
+        "des-ede3-cbc",
+        finalKey,
+        iv
+      ).setAutoPadding(true);
 
-      // Step 3: Create 24-byte key for 3DES by concatenating MD5 hash (16 bytes) + first 8 bytes
-      const newKey = Buffer.concat([key, key.slice(0, 8)]);
-
-      // Step 4: Use 8-byte zero-filled IV
-      const IV = Buffer.alloc(8, 0);
-
-      // Step 5: Encrypt with Triple DES CBC mode
-      const cipher = crypto.createCipheriv('des-ede3-cbc', newKey, IV).setAutoPadding(true);
-      return cipher.update(plainText, 'utf8', 'base64') + cipher.final('base64');
+      return cipher.update(text, "utf8", "base64") + cipher.final("base64");
     };
 
-    // 1. Encrypt BVN using Triple DES (auth.secure gets plain secret key)
-    const encryptedBVN = body.transaction?.meta?.bvn
-      ? encrypt3DES(secretKey, body.transaction.meta.bvn)
-      : null;
-    const encryptedSecure = encrypt3DES(secretKey, `${body.transaction?.customer?.account_number};${body.transaction?.customer?.bank_code}`);
+    /**
+     * ✅ SECURE FIELD (ONLY THIS IS ENCRYPTED)
+     * Format: account_number;bank_code
+     */
+    const accountNumber = body.transaction.customer.account_number;
+    const bankCode = body.transaction.customer.bank_code;
 
-    console.log("Encryption Debug:");
-    console.log("Original BVN:", body.transaction?.meta?.bvn);
-    console.log("Encrypted BVN (3DES Base64):", encryptedBVN);
-    console.log("Encrypted Secure (3DES Base64):", encryptedSecure);
+    if (!accountNumber || !bankCode) {
+      throw new Error("Missing account_number or bank_code");
+    }
 
-    const finalBody = {
-      ...body,
+    const securePlainText = `${accountNumber};${bankCode}`;
+    const encryptedSecure = encrypt3DES(secretKey, securePlainText);
+
+    /**
+     * ✅ FINAL PAYLOAD (BVN IS PLAIN TEXT)
+     * ❌ DO NOT SEND account_number OR bank_code
+     */
+    const finalPayload = {
+      request_ref: body.request_ref,
+      request_type: body.request_type,
       auth: {
-        ...body.auth,
-        secure: encryptedSecure,  // Plain secret key, NOT encrypted
-        auth_provider: "PaywithAccount"
+        type: "bank.account",
+        secure: encryptedSecure,
+        auth_provider: "PaywithAccount",
       },
       transaction: {
-        ...body.transaction,
+        mock_mode: "Live",
+        transaction_ref: body.transaction.transaction_ref,
+        transaction_desc: body.transaction.transaction_desc,
+        transaction_ref_parent: null,
+        amount: 0,
+        customer: {
+          customer_ref: body.transaction.customer.customer_ref,
+          firstname: body.transaction.customer.firstname,
+          surname: body.transaction.customer.surname,
+          email: body.transaction.customer.email,
+          mobile_no: body.transaction.customer.mobile_no,
+        },
         meta: {
-          ...body.transaction.meta,
-          bvn: encryptedBVN || body.transaction.meta.bvn,
-        }
-      }
+          amount: body.transaction.meta.amount,
+          skip_consent: "true",
+          bvn: body.transaction.meta.bvn, // ✅ PLAIN TEXT
+          biller_code: body.transaction.meta.biller_code,
+          customer_consent: body.transaction.meta.customer_consent,
+          repeat_end_date: body.transaction.meta.repeat_end_date,
+          repeat_frequency: body.transaction.meta.repeat_frequency,
+        },
+        details: {},
+      },
     };
 
-    // 2. Generate MD5 Signature as requested by user
-    // Signature = MD5(ref + ";" + secret)
-    if (!finalBody.request_ref) {
-      throw new Error("Missing request_ref in payload");
-    }
+    /**
+     * ✅ SIGNATURE = MD5(request_ref;secret_key)
+     */
+    const signatureString = `${finalPayload.request_ref};${secretKey}`;
+    const signature = crypto
+      .createHash("md5")
+      .update(signatureString, "utf8")
+      .digest("hex");
 
-    const signatureString = `${finalBody.request_ref};${secretKey}`;
+    const endpoint = `${baseUrl}/v2/transact`;
 
-    // Debug: Log the exact string being hashed (mask part of secret for security)
-    console.log("Signature String Format: [request_ref];[secret_key]");
-    console.log("Request Ref:", finalBody.request_ref);
-    console.log("Secret Key Length:", secretKey.length);
-    console.log("Full Signature String (for debug):", signatureString);
+    console.log("Final Payload:", JSON.stringify(finalPayload, null, 2));
+    console.log("Signature:", signature);
 
-    // Explicitly use UTF-8 encoding to match the Postman MD5 implementation
-    const signature = crypto.createHash('md5').update(signatureString, 'utf8').digest('hex');
+    const response = await axios.post(endpoint, finalPayload, {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        Signature: signature,
+        "Content-Type": "application/json",
+      },
+    });
 
-    // Send request to OnePipe API
-    const endpoint = baseUrl.endsWith('/v2') ? `${baseUrl}/transact` : `${baseUrl}/v2/transact`;
-
-    console.log("Calling OnePipe Endpoint:", endpoint);
-    console.log("Ref:", finalBody.request_ref);
-    console.log("Signature (MD5):", signature);
-    console.log("Request Type:", finalBody.request_type);
-    console.log("Auth Strategy: Bearer + MD5 Signature + PaywithAccount Provider + BVN Encryption");
-    console.log("Full Payload Being Sent:", JSON.stringify(finalBody, null, 2));
-
-    const response = await axios.post(
-      endpoint,
-      finalBody,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-          "Signature": signature,
-        },
-      }
-    );
-
-    console.log("✅ OnePipe Response:", JSON.stringify(response.data, null, 2));
+    console.log("✅ OnePipe Success:", response.data);
     return NextResponse.json(response.data);
-  } catch (err: any) {
-    console.error("OnePipe API Error:", err.message);
-    if (err.response) {
-      console.error("OnePipe Response Data:", JSON.stringify(err.response.data, null, 2));
-      console.error("OnePipe Status:", err.response.status);
-    }
+  } catch (error: any) {
+    console.error("❌ OnePipe Error:", error.response?.data || error.message);
+
     return NextResponse.json(
-      { error: err.response?.data || err.message },
-      { status: err.response?.status || 500 }
+      {
+        error: error.response?.data || error.message,
+      },
+      { status: error.response?.status || 500 }
     );
   }
 }
