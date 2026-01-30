@@ -1,4 +1,4 @@
-import type { NextAuthOptions, User } from "next-auth"
+import type { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { compare, hash } from "bcryptjs"
@@ -17,12 +17,12 @@ const prisma =
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-// Extend the built-in User type
-interface ExtendedUser extends User {
-  password?: string
-  phone?: string
-  location?: string
-}
+// Extend the built-in User type (Currently unused but kept for future reference)
+// interface ExtendedUser extends User {
+//   password?: string
+//   phone?: string
+//   location?: string
+// }
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -53,13 +53,13 @@ export const authOptions: NextAuthOptions = {
             const existingUser = await prisma.user.findUnique({
               where: { email: credentials.email }
             })
-            
+
             if (existingUser) {
               throw new Error("User already exists")
             }
 
             const hashedPassword = await hash(credentials.password, 12)
-            
+
             const newUser = await prisma.user.create({
               data: {
                 email: credentials.email,
@@ -118,7 +118,7 @@ export const authOptions: NextAuthOptions = {
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email || "" }
           })
-          
+
           if (!existingUser) {
             await prisma.user.create({
               data: {
