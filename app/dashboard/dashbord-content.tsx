@@ -128,10 +128,11 @@ const getDefaultRecentActivity = (): RecentActivityItem[] => [];
 
 export default function DashboardContent({ user }: DashboardContentProps) {
   // State for dynamic data - initialized with empty/zero values for new users
-  const [userData, setUserData] = useState<UserData>(getDefaultUserData());
-  const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>(getDefaultEnrolledCourses());
-  const [upcomingPayments, setUpcomingPayments] = useState<UpcomingPayment[]>(getDefaultUpcomingPayments());
-  const [recentActivity, setRecentActivity] = useState<RecentActivityItem[]>(getDefaultRecentActivity());
+  // Setters prefixed with _ as they're placeholders for future Supabase integration
+  const [userData, _setUserData] = useState<UserData>(getDefaultUserData());
+  const [enrolledCourses, _setEnrolledCourses] = useState<EnrolledCourse[]>(getDefaultEnrolledCourses());
+  const [upcomingPayments, _setUpcomingPayments] = useState<UpcomingPayment[]>(getDefaultUpcomingPayments());
+  const [recentActivity, _setRecentActivity] = useState<RecentActivityItem[]>(getDefaultRecentActivity());
 
   // TODO: Fetch actual user data from Supabase when enrollments/payments tables are ready
   // useEffect(() => {
