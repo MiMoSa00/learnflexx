@@ -529,132 +529,136 @@ export default function MyCoursesPage() {
         </ScrollReveal>
 
         {/* Search and Filter Bar */}
-        <ScrollReveal direction="up" delay={150}>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Search courses, providers, enrollment ID..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        <div className="relative z-50">
+          <ScrollReveal direction="up" delay={150}>
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search courses, providers, enrollment ID..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Most Recent</SelectItem>
-                <SelectItem value="oldest">Oldest First</SelectItem>
-                <SelectItem value="progress">By Progress</SelectItem>
-                <SelectItem value="title">Alphabetical</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </ScrollReveal>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full sm:w-[200px]">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Most Recent</SelectItem>
+                  <SelectItem value="oldest">Oldest First</SelectItem>
+                  <SelectItem value="progress">By Progress</SelectItem>
+                  <SelectItem value="title">Alphabetical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </ScrollReveal>
+        </div>
 
         {/* Tabs */}
-        <ScrollReveal direction="up" delay={200}>
-          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "all" | CourseStatus)} className="mb-8">
-            <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
-              <TabsTrigger value="all">
-                All ({stats.total})
-              </TabsTrigger>
-              <TabsTrigger value="paid">
-                Active ({stats.paid})
-              </TabsTrigger>
-              <TabsTrigger value="installment">
-                In Progress ({stats.installment})
-              </TabsTrigger>
-              <TabsTrigger value="pending-payment">
-                Pending ({stats.pending})
-              </TabsTrigger>
-            </TabsList>
+        <div className="relative z-40">
+          <ScrollReveal direction="up" delay={200}>
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "all" | CourseStatus)} className="mb-8">
+              <TabsList className="grid w-full grid-cols-4 lg:w-[600px]">
+                <TabsTrigger value="all">
+                  All ({stats.total})
+                </TabsTrigger>
+                <TabsTrigger value="paid">
+                  Active ({stats.paid})
+                </TabsTrigger>
+                <TabsTrigger value="installment">
+                  In Progress ({stats.installment})
+                </TabsTrigger>
+                <TabsTrigger value="pending-payment">
+                  Pending ({stats.pending})
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="all" className="mt-6">
-              {filteredCourses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredCourses.map((course, index) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      index={index}
-                      purchaseData={userPurchases[course.id]}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  message="You haven't enrolled in any courses yet. Start learning today!"
-                  icon={BookOpen}
-                />
-              )}
-            </TabsContent>
+              <TabsContent value="all" className="mt-6">
+                {filteredCourses.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredCourses.map((course, index) => (
+                      <CourseCard
+                        key={course.id}
+                        course={course}
+                        index={index}
+                        purchaseData={userPurchases[course.id]}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    message="You haven't enrolled in any courses yet. Start learning today!"
+                    icon={BookOpen}
+                  />
+                )}
+              </TabsContent>
 
-            <TabsContent value="paid" className="mt-6">
-              {filteredCourses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredCourses.map((course, index) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      index={index}
-                      purchaseData={userPurchases[course.id]}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  message="No active courses at the moment."
-                  icon={PlayCircle}
-                />
-              )}
-            </TabsContent>
+              <TabsContent value="paid" className="mt-6">
+                {filteredCourses.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredCourses.map((course, index) => (
+                      <CourseCard
+                        key={course.id}
+                        course={course}
+                        index={index}
+                        purchaseData={userPurchases[course.id]}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    message="No active courses at the moment."
+                    icon={PlayCircle}
+                  />
+                )}
+              </TabsContent>
 
-            <TabsContent value="installment" className="mt-6">
-              {filteredCourses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredCourses.map((course, index) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      index={index}
-                      purchaseData={userPurchases[course.id]}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  message="No courses with payment plans."
-                  icon={Clock}
-                />
-              )}
-            </TabsContent>
+              <TabsContent value="installment" className="mt-6">
+                {filteredCourses.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredCourses.map((course, index) => (
+                      <CourseCard
+                        key={course.id}
+                        course={course}
+                        index={index}
+                        purchaseData={userPurchases[course.id]}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    message="No courses with payment plans."
+                    icon={Clock}
+                  />
+                )}
+              </TabsContent>
 
-            <TabsContent value="pending-payment" className="mt-6">
-              {filteredCourses.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredCourses.map((course, index) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      index={index}
-                      purchaseData={userPurchases[course.id]}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <EmptyState
-                  message="All payments are up to date!"
-                  icon={CheckCircle}
-                />
-              )}
-            </TabsContent>
-          </Tabs>
-        </ScrollReveal>
+              <TabsContent value="pending-payment" className="mt-6">
+                {filteredCourses.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredCourses.map((course, index) => (
+                      <CourseCard
+                        key={course.id}
+                        course={course}
+                        index={index}
+                        purchaseData={userPurchases[course.id]}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    message="All payments are up to date!"
+                    icon={CheckCircle}
+                  />
+                )}
+              </TabsContent>
+            </Tabs>
+          </ScrollReveal>
+        </div>
       </div>
     </div>
   )

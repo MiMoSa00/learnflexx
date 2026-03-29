@@ -132,6 +132,11 @@ const { data: _session } = useSession()
     }
   }
 
+  const handleReportIssue = () => {
+    // Navigate to support page with course context
+    window.location.href = `/dashboard/help?course=${courseId}&issue=true`
+  }
+
   return (
     <main className="min-h-screen py-6 md:py-8 bg-background">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -451,7 +456,7 @@ const { data: _session } = useSession()
                       <Mail className="w-4 h-4 mr-2" />
                       Contact Provider
                     </BouncyButton>
-                    <BouncyButton variant="outline" className="w-full">
+                    <BouncyButton variant="outline" className="w-full" onClick={handleReportIssue}>
                       <AlertCircle className="w-4 h-4 mr-2" />
                       Report an Issue
                     </BouncyButton>

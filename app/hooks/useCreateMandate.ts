@@ -49,14 +49,9 @@ export const useCreateMandate = () => {
           },
         });
 
-        return response.data;
+        return { success: true, data: response.data };
       } catch (error: any) {
-        // Log detailed error information
-        console.error("=== Mandate Creation Error ===");
-        console.error("Status:", error.response?.status);
-        console.error("Error Data:", error.response?.data);
-        console.error("Error Message:", error.message);
-        throw error;
+        return { success: false, error: error.response?.data || error.message };
       }
     },
   });

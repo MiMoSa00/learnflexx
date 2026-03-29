@@ -3,18 +3,15 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-// import { getCurrentUser } from "@/app/lib/localStorage-auth"
 import { createClient } from "@/app/lib/supabase/client"
 import { cn } from "@/app/lib/utils"
 import { Badge } from "@/app/components/ui/badge"
 import {
-  Home,
   BookOpen,
   LayoutDashboard,
   User,
   CreditCard,
   Settings,
-  X,
   ChevronRight,
 } from "lucide-react"
 
@@ -48,25 +45,19 @@ const dashboardMenuItems = [
   },
 ]
 
-interface SidebarProps {
-  isOpen: boolean
-  onClose: () => void
-}
-
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+// Sidebar is desktop-only — on mobile the dashboard links live in the header nav strip
+export function Sidebar() {
   const supabase = createClient()
   const pathname = usePathname()
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-  // Check if user is logged in via Supabase
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       setIsLoggedIn(!!session)
     }
     checkUser()
-    
-    // Subscribe to auth changes
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session)
     })
@@ -75,133 +66,68 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }, [pathname])
 
   const isActive = (href: string) => {
-    if (href === "/dashboard" || href === "/") {
-      return pathname === href
-    }
+    if (href === "/dashboard") return pathname === href
     return pathname.startsWith(href)
   }
 
-  const handleLinkClick = () => {
-    if (window.innerWidth < 1024) {
-      onClose()
-    }
-  }
+  if (!isLoggedIn) return null
 
   return (
-    <>
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
+    // hidden on mobile, sticky on desktop
+    <aside className="hidden lg:block sticky top-[80px] w-[240px] xl:w-[280px] h-[calc(100vh-80px)] self-start bg-card border-r border-border overflow-hidden shrink-0">
+      <nav className="h-full overflow-y-auto px-3 py-4">
+        <div className="space-y-1">
+          {dashboardMenuItems.map((item) => {
+            const Icon = item.icon
+            const active = isActive(item.href)
 
-      {/* Sidebar */}
-      <aside
-        className={cn(
-          "bg-card dark:bg-gray-800 border-r border-border dark:border-gray-700 transition-transform duration-300",
-          // Desktop: sticky, positioned below header
-          "lg:sticky lg:top-[80px] lg:w-[30%] lg:max-w-[320px] lg:h-[calc(100vh-100px)] lg:self-start",
-          // Mobile: fixed, full screen height, full width up to 280px
-          "fixed top-0 left-0 w-[280px] h-screen z-50",
-          "overflow-hidden",
-          "lg:translate-x-0",
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        )}
-      >
-        {/* Close button for mobile */}
-        <button
-          onClick={onClose}
-          className="lg:hidden absolute top-4 right-4 p-2 hover:bg-muted dark:hover:bg-gray-700 rounded-lg transition-colors z-10"
-        >
-          <X className="w-5 h-5 text-foreground" />
-        </button>
-
-        {/* Navigation */}
-        <nav className="h-full overflow-y-auto px-3 py-4">
-          <div className="space-y-1">
-            {isLoggedIn ? (
-              // Show Dashboard menu when logged in
-              <>
-                {dashboardMenuItems.map((item) => {
-                  const Icon = item.icon
-                  const active = isActive(item.href)
-
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={handleLinkClick}
-                      className={cn(
-                        "flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 group text-sm",
-                        active
-                          ? "bg-primary text-primary-foreground shadow-md"
-                          : "text-muted-foreground hover:bg-muted dark:hover:bg-gray-700 hover:text-foreground"
-                      )}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <Icon
-                          className={cn(
-                            "w-4 h-4 shrink-0 transition-transform duration-200",
-                            active && "scale-110"
-                          )}
-                        />
-                        <span className="font-medium truncate">{item.title}</span>
-                      </div>
-
-                      <div className="flex items-center gap-1 shrink-0">
-                        {item.badge && item.badge > 0 && (
-                          <Badge
-                            variant={active ? "secondary" : "default"}
-                            className={cn(
-                              "h-5 min-w-5 px-1.5 text-xs",
-                              active
-                                ? "bg-primary-foreground/20 text-primary-foreground"
-                                : "bg-primary text-primary-foreground"
-                            )}
-                          >
-                            {item.badge}
-                          </Badge>
-                        )}
-                        <ChevronRight
-                          className={cn(
-                            "w-3 h-3 opacity-0 -translate-x-1 transition-all duration-200",
-                            active && "opacity-100 translate-x-0"
-                          )}
-                        />
-                      </div>
-                    </Link>
-                  )
-                })}
-              </>
-            ) : (
-              // Show only Home when NOT logged in
+            return (
               <Link
-                href="/"
-                onClick={handleLinkClick}
+                key={item.href}
+                href={item.href}
                 className={cn(
-                  "flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 group text-sm",
-                  pathname === "/"
+                  "flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm",
+                  active
                     ? "bg-primary text-primary-foreground shadow-md"
-                    : "text-muted-foreground hover:bg-muted dark:hover:bg-gray-700 hover:text-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <div className="flex items-center gap-2 min-w-0">
-                  <Home className={cn("w-4 h-4 shrink-0", pathname === "/" && "scale-110")} />
-                  <span className="font-medium truncate">Home</span>
+                  <Icon
+                    className={cn(
+                      "w-4 h-4 shrink-0 transition-transform duration-200",
+                      active && "scale-110"
+                    )}
+                  />
+                  <span className="font-medium truncate">{item.title}</span>
                 </div>
-                <ChevronRight
-                  className={cn(
-                    "w-3 h-3 opacity-0 -translate-x-1 transition-all duration-200",
-                    pathname === "/" && "opacity-100 translate-x-0"
+
+                <div className="flex items-center gap-1 shrink-0">
+                  {item.badge && item.badge > 0 && (
+                    <Badge
+                      variant={active ? "secondary" : "default"}
+                      className={cn(
+                        "h-5 min-w-5 px-1.5 text-xs",
+                        active
+                          ? "bg-primary-foreground/20 text-primary-foreground"
+                          : "bg-primary text-primary-foreground"
+                      )}
+                    >
+                      {item.badge}
+                    </Badge>
                   )}
-                />
+                  <ChevronRight
+                    className={cn(
+                      "w-3 h-3 opacity-0 -translate-x-1 transition-all duration-200",
+                      active && "opacity-100 translate-x-0"
+                    )}
+                  />
+                </div>
               </Link>
-            )}
-          </div>
-        </nav>
-      </aside>
-    </>
+            )
+          })}
+        </div>
+      </nav>
+    </aside>
   )
 }

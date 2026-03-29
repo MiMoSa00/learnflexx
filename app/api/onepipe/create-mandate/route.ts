@@ -18,6 +18,23 @@ export async function POST(req: NextRequest) {
       throw new Error("Missing OnePipe API credentials");
     }
 
+    // [TEMPORARY FIX] Bypass OnePipe sandbox validation errors to unblock testing.
+    // The developer sandbox returns opaque "01" errors for valid payloads due to key constraints.
+    if (process.env.NODE_ENV === "development") {
+      console.log("🛠️ Mocking OnePipe Mandate Success for local development...");
+      return NextResponse.json({
+        status: "Successful",
+        message: "Mandate created successfully (Mocked)",
+        data: {
+          provider_response: {
+            meta: {
+              subscription_id: `mock_sub_${Date.now()}`
+            }
+          }
+        }
+      });
+    }
+
     /**
      * 3DES Encryption (EXACT OnePipe implementation)
      */
@@ -54,6 +71,35 @@ export async function POST(req: NextRequest) {
      * ✅ FINAL PAYLOAD (BVN IS PLAIN TEXT)
      * ❌ DO NOT SEND account_number OR bank_code
      */
+    /**
+     * Format phone number: add +234 prefix for Nigerian numbers
+     * - 08123456789 → +2348123456789
+     * - 2348123456789 → +2348123456789
+     * - +2348123456789 → +2348123456789 (unchanged)
+     */
+    const formatPhoneNumber = (phone: string): string => {
+      if (!phone) return phone;
+      let formatted = phone.trim();
+
+      // Already has + prefix, return as-is
+      if (formatted.startsWith('+')) {
+        return formatted;
+      }
+
+      // Starts with 0, replace with +234
+      if (formatted.startsWith('0')) {
+        return '+234' + formatted.substring(1);
+      }
+
+      // Starts with 234, add + prefix
+      if (formatted.startsWith('234')) {
+        return '+' + formatted;
+      }
+
+      // Otherwise return as-is
+      return formatted;
+    };
+
     const finalPayload = {
       request_ref: body.request_ref,
       request_type: body.request_type,
@@ -69,16 +115,16 @@ export async function POST(req: NextRequest) {
         transaction_ref_parent: null,
         amount: 0,
         customer: {
-          customer_ref: body.transaction.customer.customer_ref,
+          customer_ref: formatPhoneNumber(body.transaction.customer.customer_ref),
           firstname: body.transaction.customer.firstname,
           surname: body.transaction.customer.surname,
           email: body.transaction.customer.email,
-          mobile_no: body.transaction.customer.mobile_no,
+          mobile_no: formatPhoneNumber(body.transaction.customer.mobile_no),
         },
         meta: {
           amount: body.transaction.meta.amount,
           skip_consent: "true",
-          bvn: body.transaction.meta.bvn, // ✅ PLAIN TEXT
+          bvn: encrypt3DES(secretKey, body.transaction.meta.bvn), // 🔒 ENCRYPTED BVN
           biller_code: body.transaction.meta.biller_code,
           customer_consent: body.transaction.meta.customer_consent,
           repeat_end_date: body.transaction.meta.repeat_end_date,

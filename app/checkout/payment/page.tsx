@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import { createClient } from "@/app/lib/supabase/client"
 import { ScrollReveal } from "@/app/components/layout/animations/scroll-reveal"
 import { BouncyButton } from "@/app/components/layout/animations/bouncy-button"
 import { Badge } from "@/app/components/ui/badge"
@@ -28,13 +29,16 @@ import {
   Shield,
   Lock,
   Clock,
-  // AlertCircle,
   Building2,
-  // Calendar,
   Copy,
   CheckCircle2,
+  AlertCircle,
+  RefreshCw,
+  Loader2,
 } from "lucide-react"
-// import { cn } from "@/app/lib/utils"
+import { usePWABanks, Bank } from "@/app/hooks/usePWABanks"
+import { usePWACollect } from "@/app/hooks/usePWACollect"
+import { useTransactionStatus } from "@/app/hooks/useTransactionStatus"
 
 const courseData: Record<string, { title: string; provider: string }> = {
   "1": { title: "Full Stack Web Development Bootcamp", provider: "TechHub Academy" },
@@ -43,11 +47,6 @@ const courseData: Record<string, { title: string; provider: string }> = {
   "4": { title: "UI/UX Design Fundamentals", provider: "Design Masters" },
   "5": { title: "Business Management Certificate", provider: "Executive Learning" },
 }
-
-const banks = [
-  "Access Bank", "GTBank", "First Bank", "UBA", "Zenith Bank",
-  "Stanbic IBTC", "Fidelity Bank", "Union Bank", "Ecobank", "FCMB"
-]
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat("en-NG", {
@@ -58,7 +57,7 @@ function formatPrice(price: number): string {
 }
 
 export default function CheckoutPaymentPage() {
-     return (
+  return (
     <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
       <PaymentPageContent />
     </Suspense>
@@ -68,6 +67,7 @@ export default function CheckoutPaymentPage() {
 function PaymentPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const supabase = createClient()
   
   const courseId = searchParams?.get('course') || "1"
   const plan = searchParams?.get('plan') as "full" | "installment" || "full"
@@ -76,16 +76,81 @@ function PaymentPageContent() {
   const monthly = parseFloat(searchParams?.get('monthly') || "0")
   const total = parseFloat(searchParams?.get('total') || "0")
   
-  const [paymentStep, setPaymentStep] = useState<"select" | "ussd" | "mandate">("select")
+  // State
+  const [paymentStep, setPaymentStep] = useState<"select" | "bank-details" | "ussd" | "success" | "failed">("select")
   const [ussdCode, setUssdCode] = useState("")
-  const [countdown, setCountdown] = useState(300)
+  const [countdown, setCountdown] = useState(300) // 5 minutes
   const [mandateAccepted, setMandateAccepted] = useState(false)
   const [selectedBank, setSelectedBank] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [accountNumber, setAccountNumber] = useState("")
   const [copied, setCopied] = useState(false)
+  const [transactionRef, setTransactionRef] = useState("")
+  const [userData, setUserData] = useState<any>(null)
+  const [errorMessage, setErrorMessage] = useState("")
+
+  // Hooks
+  const { data: banksData, isLoading: banksLoading } = usePWABanks()
+  const collectMutation = usePWACollect()
+  
+  // Status polling
+  const { 
+    status: txStatus, 
+    isPolling, 
+    startPolling, 
+    stopPolling,
+    remainingTime 
+  } = useTransactionStatus({
+    transaction_ref: transactionRef,
+    enabled: paymentStep === "ussd" && !!transactionRef,
+    pollingInterval: 5000,
+    maxAttempts: 60, // 5 minutes
+    onSuccess: () => {
+      setPaymentStep("success")
+      setTimeout(() => {
+        router.push(`/payment/success?course=${courseId}&enrollment=ENR-${Date.now()}`)
+      }, 2000)
+    },
+    onFailed: () => {
+      setPaymentStep("failed")
+      setErrorMessage("Payment was declined. Please try again.")
+    },
+    onTimeout: () => {
+      setPaymentStep("failed")
+      setErrorMessage("Payment timeout. Please try again.")
+    },
+  })
 
   const course = courseData[courseId]
+  const banks: Bank[] = banksData?.banks || []
 
+  // Fetch user data
+  useEffect(() => {
+    async function fetchUser() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+        
+        if (profile) {
+          setUserData(profile)
+        } else {
+          // Fallback to session metadata
+          setUserData({
+            first_name: session.user.user_metadata?.full_name?.split(' ')[0] || '',
+            last_name: session.user.user_metadata?.full_name?.split(' ').slice(1).join(' ') || '',
+            email: session.user.email,
+            phone: session.user.user_metadata?.phone || '',
+          })
+        }
+      }
+    }
+    fetchUser()
+  }, [supabase])
+
+  // Countdown timer
   useEffect(() => {
     if (paymentStep === "ussd" && countdown > 0) {
       const timer = setInterval(() => {
@@ -107,18 +172,82 @@ function PaymentPageContent() {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handlePayWithBank = () => {
-    setLoading(true)
-    setTimeout(() => {
-      const mockUSSD = `*737*000*${Math.floor(Math.random() * 900000 + 100000)}#`
-      setUssdCode(mockUSSD)
-      setPaymentStep("ussd")
-      setLoading(false)
+  const handlePayWithBank = async () => {
+    if (!selectedBank || !accountNumber) {
+      setErrorMessage("Please select a bank and enter your account number")
+      return
+    }
+
+    if (accountNumber.length !== 10) {
+      setErrorMessage("Please enter a valid 10-digit account number")
+      return
+    }
+
+    setErrorMessage("")
+
+    try {
+      console.log("=== PAY WITH BANK DEBUG ===")
+      console.log("All banks:", banks)
+      console.log("Selected bank name:", selectedBank)
       
-      setTimeout(() => {
-        router.push(`/payment/success?course=${courseId}&enrollment=ENR-${Date.now()}`)
-      }, 15000)
-    }, 2000)
+      const selectedBankData = banks.find(b => b.bank_name === selectedBank)
+      console.log("Selected bank data:", selectedBankData)
+      
+      if (!selectedBankData) {
+        setErrorMessage("Invalid bank selection. Please select a bank from the list.")
+        return
+      }
+      
+      if (!selectedBankData.bank_cbn_code) {
+        setErrorMessage("Bank code not found. Please try selecting a different bank.")
+        console.error("Bank has no bank_cbn_code:", selectedBankData)
+        return
+      }
+
+      console.log("Sending to collect API:", {
+        account_number: accountNumber,
+        bank_code: selectedBankData.bank_cbn_code,
+        amount: amount,
+      })
+
+      const result = await collectMutation.mutateAsync({
+        account_number: accountNumber,
+        bank_code: selectedBankData.bank_cbn_code,
+        amount: amount,
+        customer: {
+          customer_ref: userData?.phone || userData?.email || "customer",
+          firstname: userData?.first_name || "Customer",
+          surname: userData?.last_name || "User",
+          email: userData?.email || "customer@example.com",
+          mobile_no: userData?.phone || "08000000000",
+        },
+        transaction_desc: `Payment for ${course?.title || 'Course'}`,
+      })
+
+      if (result.status === "Successful" || result.ussd_code) {
+        // Generate USSD code format if not provided
+        const generatedUSSD = result.ussd_code || `*${selectedBankData.bank_cbn_code}*000*${result.reference}#`
+        setUssdCode(generatedUSSD)
+        setTransactionRef(result.transaction_ref)
+        setPaymentStep("ussd")
+        setCountdown(300) // Reset to 5 minutes
+        startPolling()
+      } else {
+        setErrorMessage(result.message || "Failed to initiate payment. Please try again.")
+      }
+    } catch (error: any) {
+      console.error("Payment error:", error)
+      setErrorMessage(error.response?.data?.error?.message || "Failed to initiate payment. Please try again.")
+    }
+  }
+
+  const handleRetry = () => {
+    setPaymentStep("select")
+    setErrorMessage("")
+    setUssdCode("")
+    setTransactionRef("")
+    setCountdown(300)
+    stopPolling()
   }
 
   const handleSetupMandate = () => {
@@ -126,10 +255,7 @@ function PaymentPageContent() {
       alert("Please select a bank and accept the mandate terms")
       return
     }
-    setLoading(true)
-    setTimeout(() => {
-      router.push(`/payment/processing?course=${courseId}&plan=installment`)
-    }, 2000)
+    router.push(`/create-mandate?course=${courseId}&plan=installment`)
   }
 
   return (
@@ -176,7 +302,53 @@ function PaymentPageContent() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             
-            {/* Full Payment - USSD Display */}
+            {/* Success State */}
+            {paymentStep === "success" && (
+              <ScrollReveal direction="up">
+                <Card className="border-green-500/30 bg-green-50 dark:bg-green-900/20">
+                  <CardContent className="p-6 sm:p-8 text-center">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500 flex items-center justify-center">
+                      <CheckCircle2 className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-400 mb-2">
+                      Payment Successful!
+                    </h3>
+                    <p className="text-muted-foreground">
+                      Redirecting to confirmation page...
+                    </p>
+                  </CardContent>
+                </Card>
+              </ScrollReveal>
+            )}
+
+            {/* Failed State */}
+            {paymentStep === "failed" && (
+              <ScrollReveal direction="up">
+                <Card className="border-red-500/30">
+                  <CardContent className="p-6 sm:p-8 text-center space-y-4">
+                    <div className="w-16 h-16 mx-auto rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                      <AlertCircle className="w-8 h-8 text-red-500" />
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold text-red-700 dark:text-red-400">
+                      Payment Failed
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {errorMessage || "Something went wrong. Please try again."}
+                    </p>
+                    <BouncyButton
+                      variant="primary"
+                      onClick={handleRetry}
+                      className="mt-4"
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Try Again
+                    </BouncyButton>
+                  </CardContent>
+                </Card>
+              </ScrollReveal>
+            )}
+
+            {/* USSD Display */}
             {plan === "full" && paymentStep === "ussd" && (
               <ScrollReveal direction="up">
                 <Card className="border-primary/30">
@@ -237,7 +409,7 @@ function PaymentPageContent() {
                       </div>
 
                       <p className="text-center text-sm sm:text-base text-muted-foreground">
-                        Waiting for payment confirmation...
+                        {isPolling ? "Checking for payment confirmation..." : "Waiting for payment..."}
                       </p>
                     </div>
                   </CardContent>
@@ -245,14 +417,56 @@ function PaymentPageContent() {
               </ScrollReveal>
             )}
 
-            {/* Full Payment - Initial */}
+            {/* Bank Selection - Full Payment */}
             {plan === "full" && paymentStep === "select" && (
               <ScrollReveal direction="up">
                 <Card>
                   <CardHeader className="p-4 sm:p-6">
-                    <CardTitle className="text-lg sm:text-xl">Payment Method</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">Pay with Bank Account</CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 sm:p-6 pt-0 space-y-4">
+                    {/* Error Message */}
+                    {errorMessage && (
+                      <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4" />
+                        {errorMessage}
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-sm font-medium text-foreground mb-2 block">
+                          Select Your Bank
+                        </label>
+                        <Select value={selectedBank} onValueChange={setSelectedBank}>
+                          <SelectTrigger className="h-11 sm:h-12">
+                            <SelectValue placeholder={banksLoading ? "Loading banks..." : "Choose your bank"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {banks.map((bank, index) => (
+                              <SelectItem key={`${bank.bank_cbn_code || index}-${index}`} value={bank.bank_name}>
+                                {bank.bank_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium text-foreground mb-2 block">
+                          Account Number
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={10}
+                          value={accountNumber}
+                          onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ''))}
+                          placeholder="Enter your 10-digit account number"
+                          className="w-full h-11 sm:h-12 px-3 rounded-md border border-input bg-background text-sm"
+                        />
+                      </div>
+                    </div>
+
                     <div className="p-4 sm:p-6 border-2 border-primary/20 rounded-xl bg-primary/5">
                       <div className="flex items-center justify-between mb-3 sm:mb-4">
                         <span className="text-sm sm:text-base text-muted-foreground">Amount to Pay:</span>
@@ -264,17 +478,17 @@ function PaymentPageContent() {
                         variant="primary"
                         className="w-full h-12 sm:h-14 text-base sm:text-lg"
                         onClick={handlePayWithBank}
-                        disabled={loading}
+                        disabled={collectMutation.isPending || !selectedBank || !accountNumber}
                       >
-                        {loading ? (
+                        {collectMutation.isPending ? (
                           <span className="flex items-center gap-2">
-                            <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                            <Loader2 className="w-4 h-4 animate-spin" />
                             Initiating Payment...
                           </span>
                         ) : (
                           <>
                             <Building2 className="w-5 h-5 mr-2" />
-                            Pay with Bank Account
+                            Continue to Pay
                           </>
                         )}
                       </BouncyButton>
@@ -299,11 +513,13 @@ function PaymentPageContent() {
                         </label>
                         <Select value={selectedBank} onValueChange={setSelectedBank}>
                           <SelectTrigger className="h-11 sm:h-12">
-                            <SelectValue placeholder="Choose your bank" />
+                            <SelectValue placeholder={banksLoading ? "Loading banks..." : "Choose your bank"} />
                           </SelectTrigger>
                           <SelectContent>
-                            {banks.map(bank => (
-                              <SelectItem key={bank} value={bank}>{bank}</SelectItem>
+                            {banks.map((bank, index) => (
+                              <SelectItem key={`installment-${bank.bank_cbn_code || index}-${index}`} value={bank.bank_name}>
+                                {bank.bank_name}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -350,9 +566,9 @@ function PaymentPageContent() {
                         variant="primary"
                         className="w-full h-12 sm:h-14 text-base sm:text-lg"
                         onClick={handleSetupMandate}
-                        disabled={loading || !selectedBank || !mandateAccepted}
+                        disabled={!selectedBank || !mandateAccepted}
                       >
-                        {loading ? "Setting up..." : "Authorize & Pay First Installment"}
+                        Authorize & Setup Mandate
                       </BouncyButton>
                     </div>
                   </CardContent>

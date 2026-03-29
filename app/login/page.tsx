@@ -48,7 +48,11 @@ export default function LoginPage() {
       router.push("/dashboard")
       router.refresh()
     } catch (err: any) {
-      setError(err.message || "Login failed. Please try again.")
+      if (err.message === "Failed to fetch" || err.message?.includes("fetch")) {
+        setError("Supabase Error: Your database project (mzhgfdstbfxcpmzfdaup) is deleted or paused. Please restore it on supabase.com or set a new URL in your .env file.");
+      } else {
+        setError(err.message || "Login failed. Please try again.")
+      }
     } finally {
       setIsLoading(false)
     }

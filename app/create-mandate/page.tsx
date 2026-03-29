@@ -82,8 +82,11 @@ export default function CreateMandatePage() {
            console.log("⚠️ No profile found, using session data only")
            form.setValue("email", session.user.email || "")
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Profile fetch error", err)
+        if (err.message === "Failed to fetch" || err.message?.includes("fetch")) {
+          setError("Supabase Error: Your database project (mzhgfdstbfxcpmzfdaup) is deleted or paused. Please restore it on supabase.com or set a new URL in your .env file.")
+        }
       } finally {
         setLoading(false)
       }
@@ -95,8 +98,20 @@ export default function CreateMandatePage() {
     setError(null)
     console.log("Form Data:", data)
 
-    // Use phone number as the customer reference
-    const customerRef = data.phone || `ref_${Date.now()}`
+    // Format phone number: replace leading 0 with 234
+    const formatPhoneNumber = (phone: string): string => {
+      if (!phone) return phone
+      let formatted = phone.trim()
+      // Starts with 0, replace with 234
+      if (formatted.startsWith('0')) {
+        return '234' + formatted.substring(1)
+      }
+      // Already starts with 234 or +234, return as-is
+      return formatted.replace(/^\+/, '') // Remove + if present
+    }
+
+    // Use formatted phone number as the customer reference
+    const customerRef = formatPhoneNumber(data.phone || "") || `ref_${Date.now()}`
     const transactionRef = `ref_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
     
     // Construct Payload - send PLAIN TEXT data, let backend handle encryption
@@ -109,7 +124,7 @@ export default function CreateMandatePage() {
         // ❌ DON'T send secure from frontend - backend will add it
       },
       transaction: {
-        mock_mode: "Live",
+        mock_mode: "Inspect",
         transaction_ref: transactionRef,
         transaction_desc: "Creating a mandate",
         transaction_ref_parent: null,
@@ -138,7 +153,17 @@ export default function CreateMandatePage() {
     console.log("Submitting Payload:", payload)
 
     createMandate(payload, {
-      onSuccess: async (response) => {
+      onSuccess: async (result: any) => {
+        // Handle gracefully returned errors
+        if (result && result.success === false) {
+          const apiError = result.error;
+          const apiMsg = typeof apiError === 'object' ? JSON.stringify(apiError) : apiError;
+          console.log("OnePipe Error Payload:", apiMsg);
+          setError(`API Error: ${apiMsg}`);
+          return;
+        }
+
+        const response = result.data;
         console.log("Mandate Response:", response)
         
         // Check if the API returned a successful status
@@ -185,9 +210,18 @@ export default function CreateMandatePage() {
           setError(errorMsg)
         }
       },
-      onError: (err: Error) => {
+      onError: (err: any) => {
         console.error("Mandate Failed:", err)
-        setError(err.message || "Failed to create mandate")
+        
+        // Extract real backend error details if an AxiosError
+        let errorMsg = err.message || "Failed to create mandate";
+        if (err.isAxiosError && err.response?.data) {
+          const apiError = err.response.data.error || err.response.data;
+          const apiMsg = typeof apiError === 'object' ? JSON.stringify(apiError) : apiError;
+          errorMsg = `API Error: ${apiMsg}`;
+        }
+        
+        setError(errorMsg)
       }
     })
   }

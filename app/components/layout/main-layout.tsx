@@ -10,19 +10,21 @@ import { Sidebar } from "@/app/components/layout/sidebar"
 export function MainLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
   const pathname = usePathname()
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [mounted, setMounted] = useState(false)
-  
-  // Check if user is logged in
+
   useEffect(() => {
     setMounted(true)
-    
+
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setIsLoggedIn(!!session)
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        setIsLoggedIn(!!session)
+      } catch {
+        setIsLoggedIn(false)
+      }
     }
-    
+
     checkSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -30,65 +32,36 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     })
 
     return () => subscription.unsubscribe()
-  }, [pathname]) // Re-check on route change
+  }, [pathname])
 
-  // Pages that should NOT show header/footer/sidebar
+  // Auth pages — no layout chrome
   const authPages = ["/login", "/signup"]
-  const isAuthPage = authPages.includes(pathname)
-
-  // Auth pages - no layout
-  if (isAuthPage) {
+  if (authPages.includes(pathname)) {
     return <>{children}</>
   }
 
-  // Don't render sidebar until mounted (prevents hydration mismatch)
-  if (!mounted) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header 
-          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          showMenuButton={false}
-          isSidebarOpen={sidebarOpen}
-        />
-        <div className="flex flex-1 pt-14 sm:pt-16 md:pt-[72px]">
-          <main className="flex-1 lg:ml-0 min-h-[calc(100vh-80px)]">
-            {children}
-          </main>
-        </div>
-        <Footer />
-      </div>
-    )
-  }
+  // Mobile top padding: main row (56px) + optional dashboard strip (~48px on mobile)
+  // On desktop (lg+): sidebar is sticky beside main content, only main row height
+  const topPadding = "pt-[104px] sm:pt-[108px] lg:pt-[72px]"
 
-  // All other pages - show header, sidebar (only if logged in), and footer
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header - fixed at top */}
-      <Header 
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        showMenuButton={isLoggedIn} // Only show hamburger if logged in
-        isSidebarOpen={sidebarOpen}
-      />
+      {/* Header — fixed, contains both the main nav row and the mobile dashboard strip */}
+      <Header />
 
-      {/* Content area with sidebar */}
-      <div className="flex flex-1 pt-14 sm:pt-16 md:pt-[72px]"> 
-        {/* Reduced spacing: pt-14 (56px) on mobile, pt-16 (64px) on sm, pt-[72px] on md+ */}
-        
-        {/* Sidebar - only render if user is logged in */}
-        {isLoggedIn && (
-          <Sidebar
-            isOpen={sidebarOpen}
-            onClose={() => setSidebarOpen(false)}
-          />
+      {/* Body */}
+      <div className={`flex flex-1 ${topPadding}`}>
+        {/* Sidebar — desktop only (hidden on mobile via sidebar.tsx) */}
+        {mounted && isLoggedIn && (
+          <Sidebar />
         )}
 
-        {/* Main Content */}
-        <main className="flex-1 lg:ml-0 min-h-[calc(100vh-80px)]">
+        {/* Main content */}
+        <main className="flex-1 min-h-[calc(100vh-80px)]">
           {children}
         </main>
       </div>
 
-      {/* Footer - at bottom */}
       <Footer />
     </div>
   )

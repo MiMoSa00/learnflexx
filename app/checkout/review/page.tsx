@@ -142,9 +142,9 @@ function ReviewPageContent() {
           return
         }
 
-        // Get user profile from users table
+        // Get user profile from profiles table
         const { data: profile, error } = await supabase
-          .from('users')
+          .from('profiles')
           .select('*')
           .eq('id', session.user.id)
           .single()
