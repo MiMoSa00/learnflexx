@@ -40,9 +40,11 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
     return <>{children}</>
   }
 
-  // Mobile top padding: main row (56px) + optional dashboard strip (~48px on mobile)
-  // On desktop (lg+): sidebar is sticky beside main content, only main row height
-  const topPadding = "pt-[104px] sm:pt-[108px] lg:pt-[72px]"
+  // Mobile top padding: main row (~64px) + optional dashboard strip (~40px)
+  // When logged out, we only need padding for the main row.
+  const topPadding = isLoggedIn 
+    ? "pt-[96px] sm:pt-[100px] lg:pt-[72px]" 
+    : "pt-[64px] sm:pt-[72px] lg:pt-[72px]"
 
   return (
     <div className="min-h-screen flex flex-col">

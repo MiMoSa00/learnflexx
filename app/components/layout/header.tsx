@@ -45,7 +45,6 @@ const dashboardNavItems = [
   { title: "Courses", href: "/my-courses", icon: BookOpen },
   { title: "Pay", href: "/payment", icon: CreditCard },
   { title: "Profile", href: "/dashboard/profile", icon: User },
-  { title: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
 interface HeaderProps {
@@ -434,6 +433,20 @@ export function Header({ showMenuButton = false }: HeaderProps) {
               >
                 About
               </Link>
+
+              {user && (
+                <>
+                  <div className="border-t border-border/50 my-1" />
+                  <Link
+                    href="/dashboard/settings"
+                    className="flex items-center gap-2 px-3 py-2 sm:py-2.5 rounded-lg hover:bg-muted transition-colors font-medium text-sm sm:text-base text-primary"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Settings className="w-4 h-4" />
+                    Settings
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

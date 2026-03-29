@@ -24,7 +24,9 @@ import {
   Smartphone,
   Trash2,
   Download,
-  ChevronRight
+  ChevronRight,
+  User as UserIcon,
+  MapPin
 } from "lucide-react"
 
 export default function SettingsPage() {
@@ -34,6 +36,14 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  // Profile Information
+  const [profileData, setProfileData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    location: "",
+  })
 
   // Password change
   const [showPasswordSection, setShowPasswordSection] = useState(false)
@@ -66,6 +76,14 @@ export default function SettingsPage() {
           return
         }
         setUserId(session.user.id)
+        
+        // Pre-fill profile data from user metadata
+        setProfileData({
+          fullName: session.user.user_metadata?.full_name || "",
+          email: session.user.email || "",
+          phone: session.user.user_metadata?.phone || "",
+          location: session.user.user_metadata?.location || "",
+        })
       } catch (err) {
         console.error("Auth check failed", err)
         router.push("/login")
@@ -75,6 +93,34 @@ export default function SettingsPage() {
     }
     checkAuth()
   }, [router, supabase])
+
+  const handleProfileUpdate = async () => {
+    setSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser({
+        email: profileData.email,
+        data: {
+          full_name: profileData.fullName,
+          phone: profileData.phone,
+          location: profileData.location,
+        }
+      })
+
+      if (error) throw error
+
+      setMessage({ 
+        type: "success", 
+        text: profileData.email !== (await supabase.auth.getUser()).data.user?.email
+          ? "Profile updated! Please check your new email for a confirmation link."
+          : "Profile updated successfully!" 
+      })
+      setTimeout(() => setMessage(null), 5000)
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Failed to update profile" })
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -145,12 +191,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4 sm:px-6 lg:px-8 flex justify-center">
+      <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
         {/* Header */}
-        <ScrollReveal direction="down" delay={0}>
-          <div className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent flex items-center gap-3">
+        <ScrollReveal direction="down" delay={0} className="w-full">
+          <div className="mb-8 text-center sm:text-left">
+            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent flex items-center justify-center sm:justify-start gap-3">
               <Settings className="w-8 h-8 text-indigo-600" />
               Settings
             </h1>
@@ -162,7 +208,7 @@ export default function SettingsPage() {
 
         {/* Message */}
         {message && (
-          <ScrollReveal direction="down" delay={0}>
+          <ScrollReveal direction="down" delay={0} className="w-full">
             <div className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${
               message.type === "success" 
                 ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" 
@@ -174,7 +220,73 @@ export default function SettingsPage() {
           </ScrollReveal>
         )}
 
-        <div className="space-y-6">
+        <div className="space-y-6 w-full">
+          {/* Profile Information Section */}
+          <ScrollReveal direction="up" delay={50}>
+            <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <CardTitle>Profile Information</CardTitle>
+                    <CardDescription>Update your personal details</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4 border-t dark:border-gray-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input
+                      id="fullName"
+                      placeholder="Your full name"
+                      value={profileData.fullName}
+                      onChange={(e) => setProfileData({ ...profileData, fullName: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={profileData.email}
+                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      placeholder="+234..."
+                      value={profileData.phone}
+                      onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location</Label>
+                    <Input
+                      id="location"
+                      placeholder="State, Country"
+                      value={profileData.location}
+                      onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                    />
+                  </div>
+                </div>
+                <BouncyButton
+                  variant="primary"
+                  onClick={handleProfileUpdate}
+                  disabled={saving}
+                  className="mt-6 w-full sm:w-auto"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Check className="w-4 h-4 mr-2" />}
+                  Save Profile
+                </BouncyButton>
+              </CardContent>
+            </Card>
+          </ScrollReveal>
           {/* Password Section */}
           <ScrollReveal direction="up" delay={100}>
             <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
