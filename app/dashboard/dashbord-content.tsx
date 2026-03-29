@@ -153,9 +153,9 @@ export default function DashboardContent({ user }: DashboardContentProps) {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-20 transition-colors duration-300">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 pt-20 transition-colors duration-300 flex flex-col items-center font-sans">
       {/* Main Content */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col items-center">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -167,7 +167,7 @@ export default function DashboardContent({ user }: DashboardContentProps) {
             <motion.h1
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent min-h-[3rem]"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 dark:from-blue-400 dark:to-purple-400 bg-clip-text text-transparent min-h-[3rem]"
             >
               {displayedText}
               <span className="animate-pulse">|</span>
@@ -176,7 +176,7 @@ export default function DashboardContent({ user }: DashboardContentProps) {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-gray-600 dark:text-gray-300 text-base sm:text-lg min-h-[1.75rem]"
+              className="text-gray-600 dark:text-gray-300 text-sm sm:text-lg min-h-[1.75rem]"
             >
               {subtitleText}
               {subtitleText && subtitleText.length > 0 && subtitleText.length < 50 && (
@@ -227,14 +227,14 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: stat.delay }}
-                className={`p-6 rounded-2xl bg-gradient-to-br ${stat.gradient} text-white shadow-lg cursor-pointer`}
+                className={`p-4 sm:p-6 rounded-2xl bg-gradient-to-br ${stat.gradient} text-white shadow-lg cursor-pointer`}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-white/80 text-sm font-medium">{stat.title}</p>
-                    <h3 className="text-2xl sm:text-3xl font-bold mt-1">{stat.value}</h3>
+                    <p className="text-white/80 text-xs sm:text-sm font-medium">{stat.title}</p>
+                    <h3 className="text-xl sm:text-3xl font-bold mt-0.5 sm:mt-1">{stat.value}</h3>
                   </div>
-                  <stat.icon className="w-10 h-10 opacity-80" />
+                  <stat.icon className="w-8 h-8 sm:w-10 sm:h-10 opacity-80 shrink-0" />
                 </div>
               </motion.div>
             ))}
@@ -243,8 +243,8 @@ export default function DashboardContent({ user }: DashboardContentProps) {
           <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
             {/* Enrolled Courses Section */}
             <motion.div variants={itemVariants} className="lg:col-span-2 space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+              <div className="flex items-center justify-between gap-4">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white">
                   My Courses
                 </h2>
                 <Link href="/dashboard/courses">
@@ -295,13 +295,13 @@ export default function DashboardContent({ user }: DashboardContentProps) {
                     className="p-4 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700"
                   >
                     <div className="flex flex-col sm:flex-row gap-4">
-                      <div className="w-full sm:w-24 h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <BookOpen className="w-10 h-10 text-white" />
+                      <div className="w-16 h-16 sm:w-24 sm:h-24 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <BookOpen className="w-6 h-6 sm:w-10 sm:h-10 text-white" />
                       </div>
-                      <div className="flex-1 space-y-3">
+                      <div className="flex-1 space-y-2 sm:space-y-3">
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                           <div>
-                            <h3 className="font-semibold text-gray-900 dark:text-white text-lg">
+                            <h3 className="font-semibold text-gray-900 dark:text-white text-base sm:text-lg">
                               {course.title}
                             </h3>
                             <span className="inline-block px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full mt-2 font-medium">

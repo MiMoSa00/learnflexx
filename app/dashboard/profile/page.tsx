@@ -176,12 +176,12 @@ export default function ProfilePage() {
   })
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+      <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
         {/* Header */}
         <ScrollReveal direction="down" delay={0}>
-          <div className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent">
+          <div className="mb-6 sm:mb-8 text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent">
               My Profile
             </h1>
             <p className="text-muted-foreground mt-2">
@@ -206,10 +206,10 @@ export default function ProfilePage() {
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Profile Card */}
-          <ScrollReveal direction="left" delay={100}>
+          <ScrollReveal direction="left" delay={100} className="w-full">
             <Card className="lg:col-span-1 overflow-hidden border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-              <div className="h-24 bg-gradient-to-r from-indigo-500 to-cyan-400"></div>
-              <CardContent className="pt-0 -mt-12 text-center">
+              <div className="h-20 sm:h-24 bg-gradient-to-r from-indigo-500 to-cyan-400"></div>
+              <CardContent className="pt-0 -mt-10 sm:-mt-12 text-center p-4 sm:p-6">
                 {/* Avatar */}
                 <div className="relative inline-block">
                   <div className="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 overflow-hidden bg-gradient-to-br from-indigo-400 to-cyan-400 flex items-center justify-center shadow-lg">
@@ -231,10 +231,10 @@ export default function ProfilePage() {
                 </div>
 
                 {/* Name & Email */}
-                <h2 className="mt-4 text-xl font-bold text-foreground">
+                <h2 className="mt-4 text-xl font-bold text-foreground break-words">
                   {profile.first_name} {profile.last_name}
                 </h2>
-                <p className="text-muted-foreground text-sm">{profile.email}</p>
+                <p className="text-muted-foreground text-sm break-all">{profile.email}</p>
 
                 {/* Member Badge */}
                 {profile.is_member && (
@@ -256,12 +256,12 @@ export default function ProfilePage() {
           </ScrollReveal>
 
           {/* Details Card */}
-          <ScrollReveal direction="right" delay={200}>
+          <ScrollReveal direction="right" delay={200} className="w-full">
             <Card className="lg:col-span-2 border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 sm:p-6">
                 <div>
-                  <CardTitle>Personal Information</CardTitle>
-                  <CardDescription>Update your personal details</CardDescription>
+                  <CardTitle className="text-xl sm:text-2xl">Personal Information</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Update your personal details</CardDescription>
                 </div>
                 {!editing && (
                   <BouncyButton
@@ -275,7 +275,7 @@ export default function ProfilePage() {
                   </BouncyButton>
                 )}
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6">
                 {/* Name Fields */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
@@ -307,7 +307,7 @@ export default function ProfilePage() {
                         className="transition-all focus:ring-2 focus:ring-indigo-500"
                       />
                     ) : (
-                      <p className="text-foreground font-medium py-2">{profile.last_name || "Not set"}</p>
+                      <p className="text-foreground font-medium py-2 break-words">{profile.last_name || "Not set"}</p>
                     )}
                   </div>
                 </div>
@@ -317,11 +317,11 @@ export default function ProfilePage() {
                   <Label className="flex items-center gap-2">
                     <Mail className="w-4 h-4 text-indigo-500" />
                     Email Address
-                    <span className="text-xs text-muted-foreground">(cannot be changed)</span>
+                    <span className="text-[10px] sm:text-xs text-muted-foreground">(cannot be changed)</span>
                   </Label>
-                  <p className="text-foreground font-medium py-2 flex items-center gap-2">
+                  <p className="text-foreground font-medium py-2 flex items-center gap-2 break-all">
                     {profile.email}
-                    <Check className="w-4 h-4 text-green-500" />
+                    <Check className="w-4 h-4 text-green-500 shrink-0" />
                   </p>
                 </div>
 
@@ -360,7 +360,7 @@ export default function ProfilePage() {
                       className="transition-all focus:ring-2 focus:ring-indigo-500"
                     />
                   ) : (
-                    <p className="text-foreground font-medium py-2">{profile.location || "Not set"}</p>
+                    <p className="text-foreground font-medium py-2 break-words">{profile.location || "Not set"}</p>
                   )}
                 </div>
 
@@ -380,7 +380,7 @@ export default function ProfilePage() {
                       className="w-full px-3 py-2 rounded-lg border border-input bg-background text-foreground transition-all focus:ring-2 focus:ring-indigo-500 focus:outline-none resize-none"
                     />
                   ) : (
-                    <p className="text-foreground font-medium py-2">{profile.bio || "No bio yet"}</p>
+                    <p className="text-foreground font-medium py-2 break-words">{profile.bio || "No bio yet"}</p>
                   )}
                 </div>
 
@@ -421,15 +421,15 @@ export default function ProfilePage() {
         </div>
 
         {/* Account Info */}
-        <ScrollReveal direction="up" delay={300}>
+        <ScrollReveal direction="up" delay={300} className="w-full">
           <Card className="mt-6 border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+            <CardHeader className="p-4 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                 <Shield className="w-5 h-5 text-indigo-500" />
                 Account Information
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50">
                   <p className="text-sm text-muted-foreground">Account ID</p>

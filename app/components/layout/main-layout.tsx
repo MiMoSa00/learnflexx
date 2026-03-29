@@ -59,7 +59,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
         )}
 
         {/* Main content */}
-        <main className="flex-1 min-h-[calc(100vh-80px)]">
+        <main className="flex-1 w-full flex flex-col items-center min-h-[calc(100vh-80px)] overflow-x-hidden">
           {children}
         </main>
       </div>

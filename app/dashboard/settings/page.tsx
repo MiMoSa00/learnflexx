@@ -191,12 +191,12 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4 sm:px-6 lg:px-8 flex justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
       <div className="w-full max-w-4xl mx-auto flex flex-col items-center">
         {/* Header */}
         <ScrollReveal direction="down" delay={0} className="w-full">
-          <div className="mb-8 text-center sm:text-left">
-            <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent flex items-center justify-center sm:justify-start gap-3">
+          <div className="mb-6 sm:mb-8 text-center sm:text-left">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-indigo-600 to-cyan-500 bg-clip-text text-transparent flex items-center justify-center sm:justify-start gap-3">
               <Settings className="w-8 h-8 text-indigo-600" />
               Settings
             </h1>
@@ -222,7 +222,7 @@ export default function SettingsPage() {
 
         <div className="space-y-6 w-full">
           {/* Profile Information Section */}
-          <ScrollReveal direction="up" delay={50}>
+          <ScrollReveal direction="up" delay={50} className="w-full">
             <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
               <CardHeader>
                 <div className="flex items-center gap-3">
@@ -288,7 +288,7 @@ export default function SettingsPage() {
             </Card>
           </ScrollReveal>
           {/* Password Section */}
-          <ScrollReveal direction="up" delay={100}>
+          <ScrollReveal direction="up" delay={100} className="w-full">
             <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
               <CardHeader 
                 className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
@@ -402,7 +402,7 @@ export default function SettingsPage() {
           </ScrollReveal>
 
           {/* Notification Preferences */}
-          <ScrollReveal direction="up" delay={200}>
+          <ScrollReveal direction="up" delay={200} className="w-full">
             <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center gap-3">
