@@ -148,13 +148,12 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      // Sign up with Supabase - Use environment variable for email redirect URL
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+      // Sign up with Supabase. Disable email confirmation in Supabase Auth settings
+      // if you want users to be redirected straight to the dashboard.
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
-          emailRedirectTo: `${appUrl}/auth/callback`,
           data: {
             full_name: formData.fullName,
             phone: formData.phone,
@@ -167,17 +166,9 @@ export default function SignupPage() {
         throw error
       }
 
-      // Profile creation is now handled by a Database Trigger (SUPABASE_TRIGGER.sql)
-
-      if (data.session) {
-        // User is signed in
-        router.push("/dashboard")
-        router.refresh()
-      } else if (data.user) {
-        // Email confirmation required
-        alert("Account created! Please check your email to confirm.")
-        router.push("/login")
-      }
+      // If email confirmation is turned off in Supabase, the user should be active immediately.
+      router.push("/dashboard")
+      router.refresh()
       
     } catch (err: any) {
       setErrors({ submit: err.message || "Signup failed. Please try again." })
