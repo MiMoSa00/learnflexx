@@ -1,23 +1,30 @@
-LearnFlex — Highlight of my contributions
+# LearnFlex — My Contributions
 
-I built the core authentication and payments flows in this sample, including:
+I built the full authentication and course management system, including:
 
-- Signup and login UI with client-side validation: `app/signup/page.tsx`, `app/login/page.tsx`
-- Supabase integration (client wrapper, auth flows): `app/lib/supabase/client.ts`, `app/auth/callback/route.ts`
-- Payment/mandate UI and flow: `app/create-mandate`, `app/dashboard/payments`
-- Database automation: `SUPABASE_TRIGGER.sql` creates user profiles on signup
-- Deployment-ready configuration and environment variable management (see `.env.example`)
+## Authentication & User Management
+- **Signup form** (`app/signup/page.tsx`): Real-time password strength validation, form state management, error handling
+- **Login flow** (`app/login/page.tsx`): Email/password and Google OAuth integration
+- **Email verification** (`app/auth/callback/route.ts`): Handles Supabase callback and session exchange
+- **Supabase client wrapper** (`app/lib/supabase/client.ts`): Secure initialization with error handling and fetch interception
 
-Why this is interesting
-- Integrates frontend, backend, and third-party services (Supabase, OnePipe/PayWithAccount)
-- Demonstrates real-world concerns: secure secrets, redirect flows, and production deployment settings
+## Course & Profile Features
+- **Course catalog** (`app/courses/page.tsx`, `app/courses/browse-courses.tsx`): Lists and filters courses with responsive design
+- **Course details** (`app/courses/[id]/`): Dynamic routing and course information pages
+- **User profile** (`app/dashboard/profile/page.tsx`): Edit user info, view history, profile management
 
-How to evaluate
-1. Clone the repo and follow the README quickstart.
-2. Inspect the listed files to see validation, API use, and database interactions.
-3. Run the signup → dashboard and payment mandate flows locally or on the provided demo.
+## Database & Backend
+- **Schema design** (`prisma/schema.prisma`): Models for User, Profile, Courses with proper relationships
+- **Auto profile creation** (`SUPABASE_TRIGGER.sql`): PostgreSQL trigger that automatically creates user profile on signup
 
-If you'd like, I can add unit tests and a short demo video to strengthen the submission.
+## Why This Matters
+This sample demonstrates full-stack skills: frontend validation and state management, backend auth integration, database design with triggers, and deployment-ready environment configuration. No external payment dependencies — pure core functionality.
+
+## How to Evaluate
+1. Clone the repo and follow README quickstart
+2. Test signup → course browse → profile edit flow
+3. Review the listed files to see validation, error handling, and database interactions
+4. Check `.env.example` to understand production config
 LearnFlex — Highlight of my contributions
 
 This doc describes the focused sample I am presenting for the MLH Fellowship application.

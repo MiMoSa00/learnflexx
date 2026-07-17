@@ -1,39 +1,62 @@
-﻿# LearnFlex — MLH Code Sample
+﻿# LearnFlex — Auth + Course Catalog
 
-Short demo repository for the LearnFlex product. This focused sample highlights the full-stack "Auth + Payments" flow using Next.js + Supabase.
+Full-stack TypeScript application built with Next.js and Supabase. Users sign up, browse courses, and manage their profiles. This sample demonstrates core full-stack engineering: authentication, real-time data, database design, and responsive UI.
 
-Live demo: https://learnflexx-mo3q.vercel.app (replace with your deployed URL)
+**Live demo:** https://learnflexx-mo3q.vercel.app
 
-Why this sample
-- Shows authentication (email, OAuth) integrated with Supabase.
-- Shows payments/mandate setup UI and server integration.
-- Uses Supabase DB triggers to create user profiles automatically.
+## Features
 
-Quickstart
-1. Copy `.env.example` to `.env` and fill in values.
-2. Install dependencies:
+- **User authentication** (email/password + Google OAuth)
+- **Course catalog** with search and filtering  
+- **User profiles** with edit and history
+- **Database triggers** for automatic profile creation on signup
+- **Supabase integration** with client-side validation and error handling
+
+## Quickstart
+
+1. Clone and install:
 ```bash
 npm install
 ```
+
+2. Set up environment:
+```bash
+cp .env.example .env
+# Fill in Supabase and Google OAuth credentials
+```
+
 3. Run locally:
 ```bash
 npm run dev
 ```
-4. Visit `http://localhost:3000` and test signup/login and payments.
 
-Files to review
-- `app/signup/page.tsx` — signup UI and validation (main contribution)
-- `app/auth/callback/route.ts` — email callback handling
+4. Visit `http://localhost:3000` and test the flow:
+   - Sign up with email or Google
+   - Browse courses
+   - View/edit your profile
+
+## Core Files
+
+- `app/signup/page.tsx` — signup form with validation
+- `app/login/page.tsx` — login and OAuth flows
+- `app/auth/callback/route.ts` — email verification callback
 - `app/lib/supabase/client.ts` — Supabase client wrapper
-- `app/create-mandate` & `app/dashboard/payments` — payment setup UI
-- `SUPABASE_TRIGGER.sql` — DB trigger that creates user profiles
+- `app/courses/page.tsx` — course listing UI
+- `app/courses/[id]/` — course details
+- `app/dashboard/profile/page.tsx` — user profile management
+- `prisma/schema.prisma` — database schema (User, Profile, Course)
+- `SUPABASE_TRIGGER.sql` — database trigger for auto profile creation
 
-Contributions
-See `HIGHLIGHT.md` for a concise list of what I personally implemented.
+## My Contributions
 
-Notes
-- Do not commit `.env`. Use `.env.example` as the template for reviewers.
-- Add a demo GIF or short video to the README before publishing.
+See `HIGHLIGHT.md` for details on what I built.
+
+## Tech Stack
+
+- **Frontend:** Next.js, TypeScript, Tailwind CSS
+- **Backend:** Supabase (PostgreSQL + auth)
+- **Database:** Prisma ORM + SQL triggers
+- **Deployment:** Vercel
 LearnFlex — MLH Fellowship Code Sample
 
 One-line summary
