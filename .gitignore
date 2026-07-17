@@ -29,3 +29,17 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# Local editors
+.vscode/
+.idea/
+
+# Secrets and configs
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Optional lockfiles
+package-lock.json
+yarn.lock

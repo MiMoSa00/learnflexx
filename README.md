@@ -1,4 +1,40 @@
-﻿LearnFlex — MLH Fellowship Code Sample
+﻿# LearnFlex — MLH Code Sample
+
+Short demo repository for the LearnFlex product. This focused sample highlights the full-stack "Auth + Payments" flow using Next.js + Supabase.
+
+Live demo: https://learnflexx-mo3q.vercel.app (replace with your deployed URL)
+
+Why this sample
+- Shows authentication (email, OAuth) integrated with Supabase.
+- Shows payments/mandate setup UI and server integration.
+- Uses Supabase DB triggers to create user profiles automatically.
+
+Quickstart
+1. Copy `.env.example` to `.env` and fill in values.
+2. Install dependencies:
+```bash
+npm install
+```
+3. Run locally:
+```bash
+npm run dev
+```
+4. Visit `http://localhost:3000` and test signup/login and payments.
+
+Files to review
+- `app/signup/page.tsx` — signup UI and validation (main contribution)
+- `app/auth/callback/route.ts` — email callback handling
+- `app/lib/supabase/client.ts` — Supabase client wrapper
+- `app/create-mandate` & `app/dashboard/payments` — payment setup UI
+- `SUPABASE_TRIGGER.sql` — DB trigger that creates user profiles
+
+Contributions
+See `HIGHLIGHT.md` for a concise list of what I personally implemented.
+
+Notes
+- Do not commit `.env`. Use `.env.example` as the template for reviewers.
+- Add a demo GIF or short video to the README before publishing.
+LearnFlex — MLH Fellowship Code Sample
 
 One-line summary
 ----------------
