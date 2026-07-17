@@ -1,4 +1,55 @@
-﻿# 🎓 LearnFlex
+﻿LearnFlex — MLH Fellowship Code Sample
+
+One-line summary
+----------------
+LearnFlex is a small full‑stack learning platform built with Next.js and Supabase. This sample demonstrates the Auth + Payments flows (signup, login, email callback, payment mandate creation, and dashboard checks).
+
+Why this sample
+---------------
+- Representative: Full‑stack TypeScript, integrates Supabase auth & DB, external payment API (OnePipe / PayWithAccount).
+- Deployable: Frontend deploys to Vercel; backend pieces are small and documented.
+- Interview‑friendly: Focused on a clear user flow you can demo in 60–90s.
+
+Files to review (high value)
+---------------------------
+- `app/signup/page.tsx` — signup form, validation, and signUp flow
+- `app/login/page.tsx` — login flow
+- `app/auth/callback/route.ts` — email verification/OAuth callback handler
+- `app/lib/supabase/client.ts` — Supabase client setup and fetch wrapper
+- `app/create-mandate/page.tsx` & `app/create_mandate/page.tsx` — payment mandate UI
+- `app/dashboard/payments/page.tsx` — payment checks and UX
+- `SUPABASE_TRIGGER.sql` — DB trigger creating profiles on signup
+- `HIGHLIGHT.md` — explanation of what I built and my contributions
+
+Quickstart (local)
+------------------
+1. Copy `.env.example` to `.env` and fill in values.
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Run development server:
+
+```bash
+npm run dev
+```
+
+4. Visit `http://localhost:3000` and test the signup → dashboard flow.
+
+Notes on email confirmation
+---------------------------
+If you want users to sign up without email confirmation, disable `Confirm sign up` in your Supabase project's Authentication settings. Otherwise configure SMTP in Supabase so confirmation emails can be sent.
+
+Publishing checklist
+-------------------
+- Remove secrets from repo (don’t commit `.env`).
+- Ensure `.env.example` is present (this repo includes one).
+- Add a short demo GIF or a public Vercel link.
+
+If you want, I can create a trimmed `sample` branch containing only the files listed above and push it to a new public repo.
+# 🎓 LearnFlex
 
 > **Nigeria's flexible online course marketplace** — discover, enroll, and pay for quality education in installments.
 
