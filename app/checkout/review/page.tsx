@@ -225,14 +225,40 @@ function ReviewPageContent() {
     setPromoError("")
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!termsAccepted) {
       alert("Please accept the terms and conditions to continue")
       return
     }
 
-    setLoading(true)
-    
+    // Check if user has set up payment
+    if (!user?.email) {
+      alert("User data not available. Please try again.")
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Fetch latest profile to check subscription_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_id')
+        .eq('id', (await supabase.auth.getUser()).data.user?.id)
+        .single()
+
+      if (!profile?.subscription_id) {
+        // User hasn't set up payment - redirect to settings
+        alert("Please set up your payment method first. You'll be redirected to settings.")
+        router.push("/dashboard/settings?tab=payment")
+        return
+      }
+    } catch (err) {
+      console.error("Error checking subscription:", err)
+      alert("Error checking payment status. Please try again.")
+      return
+    }
+
     // Build query parameters for payment page
     const params = new URLSearchParams({
       course: courseId,
@@ -259,6 +285,7 @@ function ReviewPageContent() {
     // Navigate to payment page
     setTimeout(() => {
       router.push(`/checkout/payment?${params.toString()}`)
+      setLoading(false)
     }, 800)
   }
 

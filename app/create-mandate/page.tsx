@@ -85,7 +85,7 @@ export default function CreateMandatePage() {
       } catch (err: any) {
         console.error("Profile fetch error", err)
         if (err.message === "Failed to fetch" || err.message?.includes("fetch")) {
-          setError("Supabase Error: Your database project (mzhgfdstbfxcpmzfdaup) is deleted or paused. Please restore it on supabase.com or set a new URL in your .env file.")
+          setError("Supabase Error: Your database project (soutoilrbuelwyqfffee) is deleted, paused, or the dev server environment variables need to be restarted. Please restore it on supabase.com or set a new URL in your .env file.")
         }
       } finally {
         setLoading(false)
@@ -247,7 +247,12 @@ export default function CreateMandatePage() {
               variant="ghost"
               size="icon"
               className="absolute right-2 top-2 sm:right-4 sm:top-4 h-8 w-8 sm:h-10 sm:w-10"
-              onClick={() => router.push('/dashboard')}
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  sessionStorage.setItem("skipPaymentSetup", "true")
+                }
+                router.push('/dashboard')
+              }}
             >
               <X className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>

@@ -49,7 +49,7 @@ export default function LoginPage() {
       router.refresh()
     } catch (err: any) {
       if (err.message === "Failed to fetch" || err.message?.includes("fetch")) {
-        setError("Supabase Error: Your database project (mzhgfdstbfxcpmzfdaup) is deleted or paused. Please restore it on supabase.com or set a new URL in your .env file.");
+        setError("Supabase Error: Your database project (soutoilrbuelwyqfffee) is deleted, paused, or the dev server environment variables need to be restarted. Please restore it on supabase.com or set a new URL in your .env file.");
       } else {
         setError(err.message || "Login failed. Please try again.")
       }
@@ -61,10 +61,11 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
+       const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
        const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: `${appUrl}/auth/callback`,
         }
       })
       if (error) throw error

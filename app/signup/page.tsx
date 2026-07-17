@@ -148,11 +148,13 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      // Sign up with Supabase
+      // Sign up with Supabase - Use environment variable for email redirect URL
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
         options: {
+          emailRedirectTo: `${appUrl}/auth/callback`,
           data: {
             full_name: formData.fullName,
             phone: formData.phone,

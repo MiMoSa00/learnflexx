@@ -26,8 +26,22 @@ import {
   Download,
   ChevronRight,
   User as UserIcon,
-  MapPin
+  MapPin,
+  AlertCircle
 } from "lucide-react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { useCreateMandate, type MandatePayload } from "@/app/hooks/useCreateMandate"
+
+// Validation Schema for Payment Mandate
+const mandateSchema = z.object({
+  accountNumber: z.string().length(10, "Account number must be 10 digits").regex(/^\d+$/, "Must be numbers only"),
+  bankCode: z.string().min(1, "Bank code is required"),
+  bvn: z.string().length(11, "BVN must be 11 digits").regex(/^\d+$/, "Must be numbers only"),
+})
+
+type MandateFormValues = z.infer<typeof mandateSchema>
 
 export default function SettingsPage() {
   const supabase = createClient()
@@ -36,6 +50,21 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [subscriptionId, setSubscriptionId] = useState<string | null>(null)
+  const [showPaymentSetup, setShowPaymentSetup] = useState(false)
+  const [mandateError, setMandateError] = useState<string | null>(null)
+  const [userProfile, setUserProfile] = useState<any>(null)
+
+  const { mutate: createMandate, isPending: isCreating } = useCreateMandate()
+
+  const mandateForm = useForm<MandateFormValues>({
+    resolver: zodResolver(mandateSchema),
+    defaultValues: {
+      accountNumber: "",
+      bankCode: "",
+      bvn: "",
+    },
+  })
 
   // Profile Information
   const [profileData, setProfileData] = useState({
@@ -84,6 +113,18 @@ export default function SettingsPage() {
           phone: session.user.user_metadata?.phone || "",
           location: session.user.user_metadata?.location || "",
         })
+
+        // Fetch subscription status
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle()
+
+        if (profile) {
+          setUserProfile(profile)
+          setSubscriptionId(profile.subscription_id || null)
+        }
       } catch (err) {
         console.error("Auth check failed", err)
         router.push("/login")
@@ -162,6 +203,116 @@ export default function SettingsPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleMandateSubmit = async (data: MandateFormValues) => {
+    setMandateError(null)
+    console.log("Form Data:", data)
+
+    // Format phone number: replace leading 0 with 234
+    const formatPhoneNumber = (phone: string): string => {
+      if (!phone) return phone
+      let formatted = phone.trim()
+      if (formatted.startsWith('0')) {
+        return '234' + formatted.substring(1)
+      }
+      return formatted.replace(/^\+/, '')
+    }
+
+    const userPhone = profileData.phone || userProfile?.phone || "08000000000"
+    const customerRef = formatPhoneNumber(userPhone) || `ref_${Date.now()}`
+    const transactionRef = `ref_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    
+    const payload: MandatePayload = {
+      request_ref: transactionRef,
+      request_type: "create mandate",
+      auth: {
+        type: "bank.account",
+        auth_provider: "PaywithAccount",
+      },
+      transaction: {
+        mock_mode: "Inspect",
+        transaction_ref: transactionRef,
+        transaction_desc: "Creating a mandate",
+        transaction_ref_parent: null,
+        amount: 0,
+        customer: {
+          customer_ref: customerRef,
+          firstname: profileData.fullName.split(" ")[0] || "User",
+          surname: profileData.fullName.split(" ").slice(1).join(" ") || "User",
+          email: profileData.email || "user@example.com",
+          mobile_no: userPhone,
+          account_number: data.accountNumber,
+          bank_code: data.bankCode,
+        },
+        meta: {
+          amount: "1000",
+          skip_consent: "true",
+          bvn: data.bvn,
+          biller_code: process.env.NEXT_PUBLIC_ONEPIPE_BILLER_CODE || "000752",
+          customer_consent: "https://paywithaccount.com/consent_template.pdf",
+          repeat_end_date: "2030-04-10-08-00-00",
+          repeat_frequency: "once",
+        },
+        details: {},
+      },
+    }
+
+    createMandate(payload, {
+      onSuccess: async (result: any) => {
+        if (result && result.success === false) {
+          const apiError = result.error;
+          const apiMsg = typeof apiError === 'object' ? JSON.stringify(apiError) : apiError;
+          setMandateError(`API Error: ${apiMsg}`);
+          return;
+        }
+
+        const response = result.data;
+        console.log("Mandate Response:", response)
+        
+        if (response.status === "Successful") {
+          try {
+            const subscriptionId = response.data?.provider_response?.meta?.subscription_id
+            
+            const { data: { session } } = await supabase.auth.getSession()
+            if (session) {
+              const { error: updateError } = await supabase
+                .from('profiles')
+                .update({ subscription_id: String(subscriptionId || payload.request_ref) })
+                .eq('id', session.user.id)
+              
+              if (updateError) {
+                console.error("Failed to update profile:", updateError)
+                setMandateError("Mandate created but failed to update profile.")
+                return
+              }
+              
+              setSubscriptionId(String(subscriptionId || payload.request_ref))
+            }
+            
+            setMessage({ type: "success", text: "Payment mandate created successfully!" })
+            setShowPaymentSetup(false)
+            mandateForm.reset()
+            setTimeout(() => setMessage(null), 3000)
+          } catch (err) {
+            console.error("Error updating profile:", err)
+            setMandateError("Mandate created but failed to update profile.")
+          }
+        } else {
+          const errorMsg = response.data?.error?.message || response.message || "Mandate creation failed"
+          setMandateError(errorMsg)
+        }
+      },
+      onError: (err: any) => {
+        let errorMsg = err.message || "Failed to create mandate";
+        if (err.isAxiosError && err.response?.data) {
+          const apiError = err.response.data.error || err.response.data;
+          const apiMsg = typeof apiError === 'object' ? JSON.stringify(apiError) : apiError;
+          errorMsg = `API Error: ${apiMsg}`;
+        }
+        setMandateError(errorMsg)
+      }
+    })
   }
 
   const getPasswordStrength = (password: string): { level: number; text: string; color: string } => {
@@ -398,6 +549,164 @@ export default function SettingsPage() {
                   </BouncyButton>
                 </CardContent>
               )}
+            </Card>
+          </ScrollReveal>
+
+          {/* Payment Setup Section */}
+          <ScrollReveal direction="up" delay={150} className="w-full">
+            <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                      <CreditCard className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <CardTitle>Payment Setup</CardTitle>
+                      <CardDescription>
+                        {subscriptionId ? "Payment mandate active" : "Set up payment to purchase courses"}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  {subscriptionId && <Check className="w-5 h-5 text-green-600" />}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {subscriptionId ? (
+                  <div className="space-y-3">
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <Check className="w-5 h-5" />
+                        <span className="font-medium">Your payment mandate is active</span>
+                      </div>
+                      <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                        Subscription ID: {subscriptionId}
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setShowPaymentSetup(!showPaymentSetup)}
+                      className="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 underline"
+                    >
+                      Update payment details
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400">
+                        <AlertCircle className="w-5 h-5" />
+                        <span className="font-medium">No payment method set up</span>
+                      </div>
+                      <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
+                        You need to set up a payment mandate to purchase courses.
+                      </p>
+                    </div>
+                    {!showPaymentSetup && (
+                      <BouncyButton
+                        variant="primary"
+                        onClick={() => setShowPaymentSetup(true)}
+                        className="w-full"
+                      >
+                        <CreditCard className="w-4 h-4 mr-2" />
+                        Set Up Payment Mandate
+                      </BouncyButton>
+                    )}
+                  </div>
+                )}
+
+                {showPaymentSetup && (
+                  <form onSubmit={mandateForm.handleSubmit(handleMandateSubmit)} className="space-y-4 mt-6 pt-4 border-t dark:border-gray-700">
+                    {mandateError && (
+                      <div className="bg-destructive/15 text-destructive px-4 py-3 rounded-md text-sm">
+                        {mandateError}
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <Label htmlFor="settingsAccountNumber" className="text-sm font-medium">
+                        Account Number
+                      </Label>
+                      <Input
+                        id="settingsAccountNumber"
+                        placeholder="0000000000"
+                        className="text-sm h-10"
+                        {...mandateForm.register("accountNumber")}
+                      />
+                      {mandateForm.formState.errors.accountNumber && (
+                        <p className="text-destructive text-sm">
+                          {mandateForm.formState.errors.accountNumber.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="settingsBankCode" className="text-sm font-medium">
+                        Bank Code
+                      </Label>
+                      <Input
+                        id="settingsBankCode"
+                        placeholder="Enter bank code (e.g. 214 for FCMB)"
+                        className="text-sm h-10"
+                        {...mandateForm.register("bankCode")}
+                      />
+                      {mandateForm.formState.errors.bankCode && (
+                        <p className="text-destructive text-sm">
+                          {mandateForm.formState.errors.bankCode.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="settingsBvn" className="text-sm font-medium">
+                        BVN
+                      </Label>
+                      <Input
+                        id="settingsBvn"
+                        placeholder="00000000000"
+                        className="text-sm h-10"
+                        {...mandateForm.register("bvn")}
+                      />
+                      {mandateForm.formState.errors.bvn && (
+                        <p className="text-destructive text-sm">
+                          {mandateForm.formState.errors.bvn.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3 mt-4">
+                      <BouncyButton
+                        type="submit"
+                        variant="primary"
+                        disabled={isCreating}
+                        className="flex-1"
+                      >
+                        {isCreating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Creating Mandate...
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-4 h-4 mr-2" />
+                            Authorize Mandate
+                          </>
+                        )}
+                      </BouncyButton>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowPaymentSetup(false)
+                          setMandateError(null)
+                          mandateForm.reset()
+                        }}
+                        className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </CardContent>
             </Card>
           </ScrollReveal>
 

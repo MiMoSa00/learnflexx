@@ -38,8 +38,9 @@ export default function DashboardPage() {
 
         // Profile is optional - no need to log errors
 
-        // Check Subscription ID - Redirect to mandate creation if no subscription
-        if (!profile?.subscription_id) {
+        // Check Subscription ID - Redirect to mandate creation if no subscription, unless skipped in this session
+        const skipSetup = typeof window !== 'undefined' && sessionStorage.getItem("skipPaymentSetup") === "true"
+        if (!profile?.subscription_id && !skipSetup) {
           router.push("/create-mandate")
           return
         }

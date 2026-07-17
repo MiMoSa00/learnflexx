@@ -6,7 +6,7 @@ if (typeof window !== 'undefined' && !(window as any)._fetchPatched) {
     const originalFetch = window.fetch;
     window.fetch = async (input, init) => {
         const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : '');
-        if (url.includes('mzhgfdstbfxcpmzfdaup.supabase.co') || url.includes('supabase.co')) {
+        if (url.includes('soutoilrbuelwyqfffee.supabase.co') || url.includes('supabase.co')) {
             try {
                 const response = await originalFetch(input, init);
                 return response;
@@ -15,7 +15,7 @@ if (typeof window !== 'undefined' && !(window as any)._fetchPatched) {
                     // Return a fake valid JSON response to prevent the Supabase SDK from throwing an unhandled rejection
                     return new Response(JSON.stringify({
                         error: "server_error",
-                        error_description: "Supabase project is deleted or paused on supabase.com. Please update the .env file with a valid project."
+                        error_description: "Supabase project connection failed. Please ensure the project is active and that your environment variables match the correct project on supabase.com."
                     }), {
                         status: 400,
                         headers: { 'Content-Type': 'application/json' }
